@@ -1,0 +1,17 @@
+{
+  "name": "cosmos",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^18.3.3"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "safe-stable-stringify": "^2.4.3",
+    "valtio": "^1.13.2"
+  }
+}

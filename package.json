@@ -1,7 +1,13 @@
 {
-  "name": "cosmos",
-  "module": "src/index.ts",
+  "name": "@dvtng/cosmos",
+  "version": "0.0.1",
+  "module": "dist/index.js",
   "type": "module",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "bun run build"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^18.3.3"

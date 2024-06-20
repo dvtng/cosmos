@@ -48,6 +48,7 @@ const MyLocation = model({
     const id = navigator.geolocation.watchPosition((position) => {
       emit(position.coords);
     });
+    // Stop watching when this model is no longer used
     return () => {
       clearWatch(id);
     };
@@ -55,7 +56,7 @@ const MyLocation = model({
 });
 ```
 
-If we're frequently wanting the weather at the current location, we can combine
+If we frequently need to get the weather at the current location, we can combine
 these two models into one:
 
 ```ts
@@ -76,3 +77,6 @@ function MyWeatherIcon() {
 
 Cosmos automatically tracks the dependencies of MyWeather so that it updates
 whenever either MyLocation or Weather updates.
+
+It also tracks usages of each model so that they are initialized once when used
+by a component, and then cleaned up when no longer needed.

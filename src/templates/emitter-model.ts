@@ -6,11 +6,7 @@ import type { Model } from "../core-types";
  */
 export type EmitterModel<T, P extends object | void> = {
   type: string;
-  emitter: (params: P, tools: Tools<T>) => () => void;
-};
-
-type Tools<T> = {
-  emit(value: T): void;
+  emitter: (emit: (value: T) => void, params: P) => () => void;
 };
 
 export function isEmitterModel<T, P extends object | void>(
@@ -27,7 +23,8 @@ export function fromEmitterModel<T, P extends object | void>(
     init({ params, atom }) {
       // Emitter models are trivially simple because generic models are
       // essentially the same thing.
-      return model.emitter(params, { emit: (value) => (atom.value = value) });
+      const emit = (value: T) => (atom.value = value);
+      return model.emitter(emit, params);
     },
   };
 }

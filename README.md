@@ -44,7 +44,7 @@ websockets or event listeners:
 ```ts
 const MyLocation = model({
   type: "MyLocation",
-  emitter(_, { emit }) {
+  emitter(emit) {
     const id = navigator.geolocation.watchPosition((position) => {
       emit(position.coords);
     });

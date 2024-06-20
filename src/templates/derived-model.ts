@@ -1,6 +1,6 @@
 import { watch } from "valtio/utils";
-import type { Model, Query, UseModel } from "./core-types";
-import { getNextSubscriberId, subscribe, unsubscribe } from "./state";
+import type { Model, Query, UseModel } from "../core-types";
+import { getNextSubscriberId, subscribe, unsubscribe } from "../state";
 
 /**
  * A DerivedModel synchronously computes its value based on other models.

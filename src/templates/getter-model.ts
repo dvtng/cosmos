@@ -1,5 +1,5 @@
-import type { Model } from "./core-types";
-import { toMs, type Duration } from "./duration";
+import type { Model } from "../core-types";
+import { toMs, type Duration } from "../duration";
 
 /**
  * A GetterModel is an asynchronous request/response style model.

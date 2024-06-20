@@ -1,4 +1,5 @@
 import type { Model } from "./core-types";
+import { toMs, type Duration } from "./duration";
 
 /**
  * A GetterModel is an asynchronous request/response style model.
@@ -7,11 +8,11 @@ import type { Model } from "./core-types";
 export type GetterModel<T, P extends object | void> = {
   type: string;
   get: (params: P, tools: Tools) => Promise<T>;
-  refresh?: number;
+  refresh?: Duration;
 };
 
 type Tools = {
-  refreshIn: (ms: number) => void;
+  refreshIn: (duration: Duration) => void;
 };
 
 export function isGetterModel<T, P extends object | void>(
@@ -47,11 +48,12 @@ export function fromGetterModel<T, P extends object | void>(
         );
       }
 
-      function refreshIn(ms: number) {
+      function refreshIn(duration: Duration) {
         if (cleanedUp) {
           return;
         }
 
+        const ms = toMs(duration);
         const targetTime = Date.now() + ms;
         if (scheduledRefreshTime == null || targetTime < scheduledRefreshTime) {
           if (timerId) {

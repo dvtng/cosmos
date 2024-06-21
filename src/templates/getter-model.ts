@@ -1,5 +1,6 @@
 import type { Model } from "../core-types";
 import { toMs, type Duration } from "../duration";
+import { setSmartTimer } from "../smart-timer";
 
 /**
  * A GetterModel is an asynchronous request/response style model.
@@ -29,7 +30,7 @@ export function fromGetterModel<T, P extends object | void>(
     init({ params, atom }) {
       let cleanedUp = false;
       let scheduledRefreshTime: number | null = null;
-      let timerId: number | null = null;
+      let clearTimer: (() => void) | undefined;
 
       function get() {
         if (cleanedUp) {
@@ -56,12 +57,9 @@ export function fromGetterModel<T, P extends object | void>(
         const ms = toMs(duration);
         const targetTime = Date.now() + ms;
         if (scheduledRefreshTime == null || targetTime < scheduledRefreshTime) {
-          if (timerId) {
-            window.clearTimeout(timerId);
-          }
-
+          clearTimer?.();
           scheduledRefreshTime = targetTime;
-          timerId = window.setTimeout(get, ms);
+          clearTimer = setSmartTimer(get, ms);
         }
       }
 
@@ -73,9 +71,7 @@ export function fromGetterModel<T, P extends object | void>(
 
       return function cleanup() {
         cleanedUp = true;
-        if (timerId) {
-          window.clearTimeout(timerId);
-        }
+        clearTimer?.();
       };
     },
   };

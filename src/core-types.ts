@@ -38,14 +38,10 @@ export type Query<T, P extends object | void> = {
  */
 export type UseModel = {
   // When wait: true, we can assume that the value is available.
-  <T, P extends object | void = void>(
-    query: Query<T, P>,
-    options: { wait: true }
-  ): T;
+  <T>(query: Query<T, any>, options: { wait: true }): T;
 
   // Otherwise, value can be undefined.
-  <T, P extends object | void = void>(
-    query: Query<T, P> | null | undefined,
-    options?: { wait?: boolean }
-  ): T | undefined;
+  <T>(query: Query<T, any> | null | undefined, options?: { wait?: boolean }):
+    | T
+    | undefined;
 };

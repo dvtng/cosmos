@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { getNextSubscriberId, getAtom, subscribe, unsubscribe } from "./state";
 import { proxy, useSnapshot } from "valtio";
 import type { UseModel } from "./core-types";
-import { getPromise } from "./get-promise";
+import { getModel } from "./get-model";
 
 const placeholderAtom = proxy({ value: undefined });
 
@@ -11,7 +11,7 @@ export const useModel: UseModel = function (query, options = {}) {
 
   // Handle suspense
   if (options.wait && query && atom?.value === undefined) {
-    throw getPromise(query);
+    throw getModel(query);
   }
 
   useEffect(() => {

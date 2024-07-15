@@ -6,7 +6,7 @@ import { subscribeKey } from "valtio/utils";
 /**
  * Resolve a model query as a promise.
  */
-export function getPromise<T, P extends object | void>(query: Query<T, P>) {
+export function getModel<T, P extends object | void>(query: Query<T, P>) {
   const atom = getAtom(query);
 
   if (!atom.promise) {
@@ -17,9 +17,9 @@ export function getPromise<T, P extends object | void>(query: Query<T, P>) {
             const subscriberId = getNextSubscriberId();
 
             const unsubscribeKey = subscribeKey(atom, "value", (value) => {
-              resolve(value as T);
               unsubscribeKey();
               unsubscribe(query, subscriberId);
+              resolve(value as T);
             });
 
             subscribe(query, subscriberId);

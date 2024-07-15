@@ -33,14 +33,23 @@ export function getAtom<T, P extends object | void>(query: Query<T, P>) {
   return namespace[query.$key] as Atom<T>;
 }
 
-export function subscribe<T, P extends object | void>(
-  query: Query<T, P>,
-  subscriberId: number
-): Atom<T> {
+export function reset<P extends object | void>(query: Query<any, P>) {
+  const atom = state.atoms[query.model.type]?.[query.$key];
+  if (!atom) {
+    return;
+  }
+
+  atom.value = undefined;
+  atom.promise = undefined;
+  atom.initialized = false;
+  atom.cleanup?.();
+  if (atom.subscribers.size > 0) {
+    initializeAtom(query);
+  }
+}
+
+function initializeAtom<T, P extends object | void>(query: Query<T, P>) {
   const atom = getAtom(query);
-
-  atom.subscribers.add(subscriberId);
-
   if (!atom.initialized) {
     atom.initialized = true;
     const cleanup = query.model.init({ params: query.params, atom });
@@ -49,7 +58,15 @@ export function subscribe<T, P extends object | void>(
       atom.initialized = false;
     };
   }
+}
 
+export function subscribe<T, P extends object | void>(
+  query: Query<T, P>,
+  subscriberId: number
+): Atom<T> {
+  const atom = getAtom(query);
+  atom.subscribers.add(subscriberId);
+  initializeAtom(query);
   return atom;
 }
 

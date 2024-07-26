@@ -55,10 +55,11 @@ export function fromGetterModel<T, P extends object | void>(
         }
 
         const ms = toMs(duration);
-        const targetTime = Date.now() + ms;
-        if (scheduledRefreshTime == null || targetTime < scheduledRefreshTime) {
+        const expiry = Date.now() + ms;
+        atom.expiry = expiry;
+        if (scheduledRefreshTime == null || expiry < scheduledRefreshTime) {
           clearTimer?.();
-          scheduledRefreshTime = targetTime;
+          scheduledRefreshTime = expiry;
           clearTimer = setSmartTimer(get, ms);
         }
       }

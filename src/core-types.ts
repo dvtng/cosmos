@@ -22,6 +22,7 @@ export type Atom<T = unknown> = {
   subscribers: Set<number>;
   cleanup?: () => void;
   promise?: Promise<T>;
+  expiry?: number;
 };
 
 /**

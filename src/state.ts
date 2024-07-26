@@ -39,10 +39,11 @@ export function reset<P extends object | void>(query: Query<any, P>) {
     return;
   }
 
+  atom.cleanup?.();
   atom.value = undefined;
   atom.promise = undefined;
   atom.initialized = false;
-  atom.cleanup?.();
+  atom.expiry = undefined;
   if (atom.subscribers.size > 0) {
     initializeAtom(query);
   }

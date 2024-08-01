@@ -22,17 +22,17 @@ Models can then be queried inside components:
 
 ```tsx
 function WeatherIcon({ latitude, longitude }) {
-  const weather = useModel(Weather({ latitude, longitude }));
+  const [weather] = useModel(Weather({ latitude, longitude }));
 
   return <img src={weather ? weather.iconUrl : placeholderIconUrl} />;
 }
 ```
 
-We can use suspense if preferred by passing `{ wait: true }`:
+We can use suspense if preferred using `waitFor`:
 
 ```tsx
 function WeatherIcon({ latitude, longitude }) {
-  const weather = useModel(Weather({ latitude, longitude }), { wait: true });
+  const [weather] = waitFor(useModel(Weather({ latitude, longitude })));
 
   return <img src={weather.iconUrl} />;
 }
@@ -63,13 +63,13 @@ these two models into one:
 const MyWeather = model({
   type: "MyWeather",
   derive(getModel) {
-    const coords = getModel(MyLocation(), { wait: true });
+    const [coords] = waitFor(getModel(MyLocation()));
     return getModel(Weather(coords));
   },
 });
 
 function MyWeatherIcon() {
-  const myWeather = useModel(MyWeather(), { wait: true });
+  const [myWeather] = waitFor(useModel(MyWeather()));
 
   return <img src={myWeather.iconUrl} />;
 }

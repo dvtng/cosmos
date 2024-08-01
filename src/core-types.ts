@@ -28,21 +28,22 @@ export type Atom<T = unknown> = {
 /**
  * A query for a model instance.
  */
-export type Query<T, P extends object | void> = {
+export type Query<T = any, P extends object | void = any> = {
   $key: string; // Serialized model type and params.
   model: Model<T, P>;
   params: P;
 };
 
 /**
+ * Infer a query's model type
+ */
+export type QueryType<Q extends Query> = Q extends Query<infer T> ? T : never;
+
+/**
  * useModel enables synchronous access to a model instance's current value.
  */
-export type UseModel = {
-  // When wait: true, we can assume that the value is available.
-  <T>(query: Query<T, any>, options: { wait: true }): T;
+export type UseModel = <Q extends Query>(
+  query: Q
+) => ModelResult<QueryType<Q> | undefined>;
 
-  // Otherwise, value can be undefined.
-  <T>(query: Query<T, any> | null | undefined, options?: { wait?: boolean }):
-    | T
-    | undefined;
-};
+export type ModelResult<T> = [T, Atom<T>, Query<T>];

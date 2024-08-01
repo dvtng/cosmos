@@ -1,5 +1,6 @@
 import { proxy, ref } from "valtio";
-import type { Atom, Query } from "./core-types";
+import type { Atom, Query, QueryType } from "./core-types";
+import { subscribeKey } from "valtio/utils";
 
 export type State = {
   nextSubscriberId: number;
@@ -15,7 +16,7 @@ export function getNextSubscriberId() {
   return state.nextSubscriberId++;
 }
 
-export function getAtom<T, P extends object | void>(query: Query<T, P>) {
+export function getAtom<Q extends Query<any, any>>(query: Q) {
   if (!state.atoms[query.model.type]) {
     state.atoms[query.model.type] = {};
   }
@@ -30,7 +31,7 @@ export function getAtom<T, P extends object | void>(query: Query<T, P>) {
     };
   }
 
-  return namespace[query.$key] as Atom<T>;
+  return namespace[query.$key] as Atom<QueryType<Q>>;
 }
 
 export function reset<P extends object | void>(query: Query<any, P>) {
@@ -45,14 +46,15 @@ export function reset<P extends object | void>(query: Query<any, P>) {
   atom.initialized = false;
   atom.expiry = undefined;
   if (atom.subscribers.size > 0) {
-    initializeAtom(query);
+    initialize(query);
   }
 }
 
-function initializeAtom<T, P extends object | void>(query: Query<T, P>) {
+export function initialize<T, P extends object | void>(query: Query<T, P>) {
   const atom = getAtom(query);
   if (!atom.initialized) {
     atom.initialized = true;
+
     const cleanup = query.model.init({ params: query.params, atom });
     atom.cleanup = () => {
       cleanup?.();
@@ -61,20 +63,31 @@ function initializeAtom<T, P extends object | void>(query: Query<T, P>) {
   }
 }
 
-export function subscribe<T, P extends object | void>(
-  query: Query<T, P>,
-  subscriberId: number
-): Atom<T> {
+export function getPromise<Q extends Query>(query: Q) {
   const atom = getAtom(query);
-  atom.subscribers.add(subscriberId);
-  initializeAtom(query);
-  return atom;
+
+  if (!atom.promise) {
+    atom.promise = new Promise<QueryType<Q>>((resolve) => {
+      const subscriberId = getNextSubscriberId();
+      const unsubscribeKey = subscribeKey(atom, "value", (value) => {
+        unsubscribeKey();
+        unsubscribe(query, subscriberId);
+        resolve(value as QueryType<Q>);
+      });
+      subscribe(query, subscriberId);
+    });
+  }
+
+  return atom.promise;
 }
 
-export function unsubscribe<T, P extends object | void>(
-  query: Query<T, P>,
-  subscriberId: number
-) {
+export function subscribe<Q extends Query>(query: Q, subscriberId: number) {
+  const atom = getAtom(query);
+  atom.subscribers.add(subscriberId);
+  initialize(query);
+}
+
+export function unsubscribe(query: Query<any, any>, subscriberId: number) {
   const atom = state.atoms[query.model.type]?.[query.$key];
   if (!atom) {
     return;

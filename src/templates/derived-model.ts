@@ -1,6 +1,6 @@
 import { watch } from "valtio/utils";
 import type { Model, Query, UseModel } from "../core-types";
-import { getNextSubscriberId, subscribe, unsubscribe } from "../state";
+import { getAtom, getNextSubscriberId, subscribe, unsubscribe } from "../state";
 
 /**
  * A DerivedModel synchronously computes its value based on other models.
@@ -20,8 +20,6 @@ export function isDerivedModel<T, P extends object | void>(
 
 let nextDerivedModelId = 0;
 
-const Suspend = {};
-
 export function fromDerivedModel<T, P extends object | void>(
   model: DerivedModel<T, P>
 ): Model<T, P> {
@@ -37,31 +35,24 @@ export function fromDerivedModel<T, P extends object | void>(
       const unwatch = watch((get) => {
         const nextQueries: Record<string, Query<any, any>> = {};
 
-        const getModel: UseModel = function (query, options = {}) {
-          if (!query) {
-            return;
-          }
-
-          const atom = subscribe(query, subscriberId);
+        const getModel: UseModel = function (query) {
+          const atom = getAtom(query);
+          subscribe(query, subscriberId);
           nextQueries[query.$key] = query;
 
           // Tell valtio to track the dependency
           get(atom);
 
-          // We mimic React's suspense in our derived model. Throwing the
-          // Suspend object simply tells us to wait to re-run the derivation.
-          if (options.wait && atom.value === undefined) {
-            throw Suspend;
-          }
-
-          return atom.value;
+          return [atom.value, atom, query];
         };
 
         try {
           const value = model.derive(getModel, params);
           atom.value = value;
         } catch (e) {
-          if (e !== Suspend) {
+          if (e instanceof Promise) {
+            // Ignore, since this model will re-run when there is a value
+          } else {
             throw e;
           }
         }

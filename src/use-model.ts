@@ -1,24 +1,12 @@
 import { useEffect } from "react";
 import { getNextSubscriberId, getAtom, subscribe, unsubscribe } from "./state";
-import { proxy, useSnapshot } from "valtio";
-import type { UseModel } from "./core-types";
-import { getModel } from "./get-model";
+import { useSnapshot } from "valtio";
+import type { Atom, Query, QueryType, UseModel } from "./core-types";
 
-const placeholderAtom = proxy({ value: undefined });
-
-export const useModel: UseModel = function (query, options = {}) {
-  const atom = query ? getAtom(query) : null;
-
-  // Handle suspense
-  if (options.wait && query && atom?.value === undefined) {
-    throw getModel(query);
-  }
+export const useModel: UseModel = function <Q extends Query>(query: Q) {
+  const atom = getAtom(query);
 
   useEffect(() => {
-    if (!query) {
-      return;
-    }
-
     const subscriberId = getNextSubscriberId();
     subscribe(query, subscriberId);
 
@@ -30,7 +18,7 @@ export const useModel: UseModel = function (query, options = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query?.$key]);
 
-  const _atom = useSnapshot(atom ?? placeholderAtom);
+  const _atom = useSnapshot(atom) as Atom<QueryType<Q>>;
 
-  return _atom.value;
+  return [_atom.value, atom, query];
 };

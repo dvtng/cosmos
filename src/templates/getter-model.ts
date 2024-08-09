@@ -43,8 +43,9 @@ export function fromGetterModel<T, P extends object | void>(
           (value) => {
             atom.value = value;
           },
-          () => {
+          (e) => {
             // TODO handle errors
+            throw e;
           }
         );
       }

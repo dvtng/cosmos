@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { getNextSubscriberId, getAtom, subscribe, unsubscribe } from "./state";
 import { useSnapshot } from "valtio";
 import type { Atom, Query, QueryType, UseModel } from "./core-types";
@@ -6,7 +6,7 @@ import type { Atom, Query, QueryType, UseModel } from "./core-types";
 export const useModel: UseModel = function <Q extends Query>(query: Q) {
   const atom = getAtom(query);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();
     subscribe(query, subscriberId);
 

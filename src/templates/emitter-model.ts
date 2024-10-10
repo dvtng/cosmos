@@ -6,7 +6,7 @@ import type { Model } from "../core-types";
  */
 export type EmitterModel<T, P extends object | void> = {
   type: string;
-  emitter: (emit: (value: T) => void, params: P) => () => void;
+  emitter: (emit: (value: T) => void, params: P) => void | (() => void);
 };
 
 export function isEmitterModel<T, P extends object | void>(

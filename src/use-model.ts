@@ -1,10 +1,20 @@
 import { useLayoutEffect } from "react";
-import { getNextSubscriberId, getAtom, subscribe, unsubscribe } from "./state";
+import {
+  getNextSubscriberId,
+  getAtom,
+  subscribe,
+  unsubscribe,
+  initialize,
+} from "./state";
 import { useSnapshot } from "valtio";
 import type { Atom, Query, QueryType, UseModel } from "./core-types";
 
 export const useModel: UseModel = function <Q extends Query>(query: Q) {
   const atom = getAtom(query);
+
+  // Initialize in the render phase to ensure sync models (e.g. derived models
+  // with already cached data) are ready on first render.
+  initialize(query);
 
   useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();

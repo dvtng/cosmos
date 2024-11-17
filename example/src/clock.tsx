@@ -1,10 +1,9 @@
-import { model, useModel } from "@dvtng/cosmos";
+import { model, useModel } from "@dvtng/cosmos/src/index";
 
 export const Time = model({
   type: "Time",
   refresh: { seconds: 1 },
   async get() {
-    console.log("get time");
     await new Promise((resolve) => setTimeout(resolve, 100));
     return new Date();
   },

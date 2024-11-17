@@ -39,15 +39,22 @@ export function fromGetterModel<T, P extends object | void>(
 
         scheduledRefreshTime = null;
 
-        model.get(params, { refreshIn }).then(
-          (value) => {
-            atom.value = value;
-          },
-          (e) => {
-            // TODO handle errors
-            throw e;
-          }
-        );
+        model
+          .get(params, { refreshIn })
+          .then(
+            (value) => {
+              atom.value = value;
+            },
+            (e) => {
+              // TODO handle errors
+              throw e;
+            }
+          )
+          .finally(() => {
+            if (model.refresh) {
+              refreshIn(model.refresh);
+            }
+          });
       }
 
       function refreshIn(duration: Duration) {
@@ -66,10 +73,6 @@ export function fromGetterModel<T, P extends object | void>(
       }
 
       get();
-
-      if (model.refresh) {
-        refreshIn(model.refresh);
-      }
 
       return function cleanup() {
         cleanedUp = true;

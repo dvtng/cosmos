@@ -1,5 +1,6 @@
 import { Clock } from "./clock";
 import { CounterView } from "./counter";
+import { CounterOnFocusView } from "./counter-on-focus";
 
 export function App() {
   return (
@@ -9,6 +10,9 @@ export function App() {
       </div>
       <div>
         Counter: <CounterView />
+      </div>
+      <div>
+        Counter on focus: <CounterOnFocusView />
       </div>
     </div>
   );

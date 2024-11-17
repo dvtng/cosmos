@@ -9,7 +9,11 @@ import { setSmartTimer } from "../smart-timer";
 export type GetterModel<T, P extends object | void> = {
   type: string;
   get: (params: P, tools: Tools) => Promise<T>;
-  refresh?: Duration;
+  refresh?: RefreshInterval;
+};
+
+export type RefreshInterval = Duration & {
+  onFocus?: boolean;
 };
 
 type Tools = {
@@ -63,6 +67,10 @@ export function fromGetterModel<T, P extends object | void>(
         }
 
         const ms = toMs(duration);
+        if (!ms) {
+          return;
+        }
+
         const expiry = Date.now() + ms;
         atom.expiry = expiry;
         if (scheduledRefreshTime == null || expiry < scheduledRefreshTime) {
@@ -72,11 +80,18 @@ export function fromGetterModel<T, P extends object | void>(
         }
       }
 
+      if (model.refresh?.onFocus) {
+        window.addEventListener("focus", get);
+      }
+
       get();
 
       return function cleanup() {
         cleanedUp = true;
         clearTimer?.();
+        if (model.refresh?.onFocus) {
+          window.removeEventListener("focus", get);
+        }
       };
     },
   };

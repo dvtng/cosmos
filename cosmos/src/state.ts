@@ -34,6 +34,14 @@ export function getAtom<Q extends Query<any, any>>(query: Q) {
   return namespace[query.$key] as Atom<QueryType<Q>>;
 }
 
+export function checkAtom<Q extends Query>(
+  query: Q
+): Atom<QueryType<Q>> | undefined {
+  return state.atoms[query.model.type]?.[query.$key] as
+    | Atom<QueryType<Q>>
+    | undefined;
+}
+
 export function reset<P extends object | void>(query: Query<any, P>) {
   const atom = state.atoms[query.model.type]?.[query.$key];
   if (!atom) {

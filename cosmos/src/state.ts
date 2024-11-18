@@ -75,12 +75,12 @@ export function getPromise<Q extends Query>(query: Q) {
   const atom = getAtom(query);
 
   if (!atom.promise) {
-    atom.promise = new Promise<QueryType<Q>>((resolve) => {
+    atom.promise = new Promise<Atom<QueryType<Q>>>((resolve) => {
       const subscriberId = getNextSubscriberId();
-      const unsubscribeKey = subscribeKey(atom, "value", (value) => {
+      const unsubscribeKey = subscribeKey(atom, "value", () => {
         unsubscribeKey();
         unsubscribe(query, subscriberId);
-        resolve(value as QueryType<Q>);
+        resolve(atom as Atom<QueryType<Q>>);
       });
       subscribe(query, subscriberId);
     });

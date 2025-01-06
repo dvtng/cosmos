@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply border border-yellow-400 text-yellow-400 px-4 py-1 rounded-md;
+  }
+
+  .link {
+    @apply underline underline-offset-4 text-yellow-400 opacity-50 hover:opacity-100;
+  }
+
+  .panel {
+    @apply border border-white/20 p-4 flex flex-col gap-4 max-w-md mx-auto;
+
+    h2 {
+      @apply font-bold text-lg;
+    }
+  }
+}

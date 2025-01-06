@@ -1,16 +1,18 @@
-import { model, useModel } from "@dvtng/cosmos/src/index";
+import { model, useModel } from "@dvtng/cosmos/src/v2";
 
-export const Time = model({
-  type: "Time",
-  refresh: { seconds: 1 },
-  async get() {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return new Date();
-  },
+export const Time = model(() => {
+  return {
+    value: new Date(),
+    start(state) {
+      const interval = setInterval(() => {
+        state.value = new Date();
+      }, 1000);
+      return () => clearInterval(interval);
+    },
+  };
 });
 
 export function Clock() {
-  const [time] = useModel(Time());
-
-  return <div>{time?.toLocaleTimeString()}</div>;
+  const time = useModel(Time());
+  return <div>{time.value.toLocaleTimeString()}</div>;
 }

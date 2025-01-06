@@ -1,18 +1,18 @@
-import { model, useModel } from "@dvtng/cosmos/src/index";
+import { model, request, useModel } from "@dvtng/cosmos/src/v2";
+import NumberFlow from "@number-flow/react";
 
 let count = 0;
 
-export const CounterOnFocus = model({
-  type: "CounterOnFocus",
-  refresh: { onFocus: true },
-  async get() {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return ++count;
-  },
+export const CounterOnFocus = model(() => {
+  return request(() => count++, {
+    refresh: {
+      onFocus: true,
+    },
+  });
 });
 
 export function CounterOnFocusView() {
-  const [counter] = useModel(CounterOnFocus());
+  const counter = useModel(CounterOnFocus());
 
-  return <div>{counter}</div>;
+  return <NumberFlow value={counter.value} />;
 }

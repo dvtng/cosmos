@@ -49,7 +49,7 @@ export type Suspend = { __type: "SUSPEND" };
 
 export const SUSPEND: Suspend = ref({ __type: "SUSPEND" });
 
-export type Suspended<T> = NonSuspended<T> | Suspend;
+export type Suspended<T> = T | Suspend;
 
 export type NonSuspended<T> = T extends Suspend ? never : T;
 

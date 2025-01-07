@@ -19,7 +19,7 @@ export type GetModel = <TArgs extends any[], TValue>(
 ) => QueryResult<TArgs, TValue>;
 
 export function compute<TValue>(
-  fn: (getModel: GetModel) => TValue
+  fn: (getModel: GetModel) => Suspended<TValue>
 ): Spec<Suspended<TValue>> {
   let value = suspended<TValue>();
   let error: Error | undefined;

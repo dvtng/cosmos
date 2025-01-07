@@ -1,5 +1,5 @@
 import { useSnapshot } from "valtio";
-import { type QueryResult, type Query, isReady } from "./core";
+import { type QueryResult, type Query, isNotSuspended } from "./core";
 import {
   initQueryState,
   removeSubscriber,
@@ -31,7 +31,7 @@ export function useModel<TArgs extends any[], TValue>(
     error: $queryState.error,
     get value() {
       const v = $queryState.value as TValue;
-      if (isReady(v)) {
+      if (isNotSuspended(v)) {
         return v;
       }
       if ($queryState.error) {

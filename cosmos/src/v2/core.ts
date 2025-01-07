@@ -57,7 +57,7 @@ export function suspended<T>(): Suspended<T> {
   return SUSPEND;
 }
 
-export function isReady<T>(value: T): value is NonSuspended<T> {
+export function isNotSuspended<T>(value: T): value is NonSuspended<T> {
   return value !== SUSPEND;
 }
 

@@ -3,7 +3,7 @@ import {
   type QueryState,
   type Query,
   type CompleteSpec,
-  isReady,
+  isNotSuspended,
 } from "./core";
 import { serializeArgs } from "./serialize-query";
 import { getError } from "./get-error";
@@ -65,7 +65,7 @@ export function getPromise<TArgs extends any[], TValue>(
 
   if (!queryState.internal.promise) {
     queryState.internal.promise = new Promise<TValue>((resolve, reject) => {
-      if (isReady(queryState.value)) {
+      if (isNotSuspended(queryState.value)) {
         resolve(queryState.value);
         return;
       }
@@ -77,10 +77,10 @@ export function getPromise<TArgs extends any[], TValue>(
 
       const subscriberId = getNextSubscriberId();
       const unsubscribe = subscribe(queryState, () => {
-        if (isReady(queryState.value) || queryState.error) {
+        if (isNotSuspended(queryState.value) || queryState.error) {
           unsubscribe();
           removeSubscriber(query, subscriberId);
-          if (isReady(queryState.value)) {
+          if (isNotSuspended(queryState.value)) {
             resolve(queryState.value);
           } else {
             reject(queryState.error);

@@ -4,7 +4,7 @@ import {
   type Query,
   type QueryState,
   type Spec,
-  isReady,
+  isNotSuspended,
   suspended,
   SUSPEND,
   type Suspended,
@@ -94,7 +94,7 @@ function toQueryResult<TArgs extends any[], TValue>(
     maybeValue: queryState.value,
     error: queryState.error,
     get value() {
-      if (isReady(queryState.value)) {
+      if (isNotSuspended(queryState.value)) {
         return queryState.value;
       }
       throw SUSPEND;

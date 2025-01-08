@@ -1,7 +1,5 @@
-import type { INTERNAL_Snapshot } from "valtio";
 import type { Duration } from "../duration";
 import type { NotSuspended } from "./suspended";
-import type { Immutable } from "./immutable";
 
 export type State<T> = {
   value: T;
@@ -34,7 +32,7 @@ export type Spec<T> = {
 };
 
 export type Snapshot<T> = {
-  value: NotSuspended<Immutable<T>>;
-  maybeValue: Immutable<T>;
+  value: NotSuspended<T>;
+  maybeValue: T;
   error: Error | undefined;
 };

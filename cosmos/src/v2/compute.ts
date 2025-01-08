@@ -6,7 +6,6 @@ import { serializeArgs } from "./serialize-args";
 import { getError } from "./get-error";
 import type { MinSpec } from "./model";
 import { type Suspended, isNotSuspended, suspended } from "./suspended";
-import type { Immutable } from "./immutable";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -78,7 +77,7 @@ export function compute<TValue>(
 }
 
 function toSnapshot<T>(spec: Spec<T>, state: InternalState<T>): Snapshot<T> {
-  const v = state.value as Immutable<T>;
+  const v = state.value;
   return {
     maybeValue: v,
     error: state.error,

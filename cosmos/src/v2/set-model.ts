@@ -1,10 +1,7 @@
-import type { Query, State } from "./core";
-import { initQueryState } from "./state";
+import type { Spec, State } from "./core";
+import { initState } from "./cosmos";
 
-export function setModel<TArgs extends any[], TValue>(
-  query: Query<TArgs, TValue>,
-  setter: (state: State<TValue>) => void
-) {
-  const queryState = initQueryState(query);
-  setter(queryState);
+export function setModel<T>(spec: Spec<T>, setter: (state: State<T>) => void) {
+  const state = initState(spec);
+  setter(state);
 }

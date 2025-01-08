@@ -3,6 +3,7 @@ import NumberFlow from "@number-flow/react";
 
 export const Counter = model((id: number) => {
   return {
+    key: "Counter",
     value: 0,
     forget: true,
     start: (state) => {

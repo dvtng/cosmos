@@ -1,13 +1,13 @@
 import { useSnapshot } from "valtio";
-import { state } from "../state";
+import { cosmos } from "../cosmos";
 import { ModelView } from "./model-view";
 import { createPortal } from "react-dom";
 import { devState } from "./dev-state";
 
 export function CosmosDev() {
-  const $state = useSnapshot(state);
+  const $state = useSnapshot(cosmos);
   const $devState = useSnapshot(devState);
-  const keys = Object.keys($state.queries);
+  const keys = Object.keys($state.states);
 
   const content = (
     <div

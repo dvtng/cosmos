@@ -6,19 +6,23 @@ export type Duration = Partial<{
   days: number;
 }>;
 
-export function toMs(duration: Duration, fallback?: number): number;
+export function toMs(duration: Duration | true, fallback?: number): number;
 
 export function toMs<T>(
-  duration: Duration | undefined,
+  duration: Duration | true | undefined,
   fallback: T
 ): number | T;
 
 export function toMs<T>(
-  duration: Duration | undefined,
+  duration: Duration | true | undefined,
   fallback = 0
 ): number | T {
   if (!duration) {
     return fallback;
+  }
+
+  if (duration === true) {
+    return 0;
   }
 
   let isSet = false;

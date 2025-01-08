@@ -1,37 +1,29 @@
 import { watch } from "valtio/utils";
-import {
-  type QueryResult,
-  type Query,
-  type QueryState,
-  type Spec,
-  isNotSuspended,
-  suspended,
-  SUSPEND,
-  type Suspended,
-} from "./core";
+import { type Snapshot, type InternalState, type Spec } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { addSubscriber, initQueryState, removeSubscriber } from "./state";
-import { serializeQuery } from "./serialize-query";
+import { addSubscriber, initState, removeSubscriber } from "./cosmos";
+import { serializeArgs } from "./serialize-args";
 import { getError } from "./get-error";
+import type { MinSpec } from "./model";
+import { type Suspended, isNotSuspended, suspended } from "./suspended";
+import type { Immutable } from "./immutable";
 
-export type GetModel = <TArgs extends any[], TValue>(
-  query: Query<TArgs, TValue>
-) => QueryResult<TArgs, TValue>;
+export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
 export function compute<TValue>(
-  fn: (getModel: GetModel) => Suspended<TValue>
-): Spec<Suspended<TValue>> {
+  fn: (get: GetSnapshot) => Suspended<TValue>
+): MinSpec<Suspended<TValue>> {
   let value = suspended<TValue>();
   let error: Error | undefined;
 
   // Try to compute a synchronous value
   try {
     value = fn((query) => {
-      const queryState = initQueryState(query);
-      return toQueryResult(query, queryState);
+      const queryState = initState(query);
+      return toSnapshot(query, queryState);
     });
   } catch (error) {
-    if (error !== SUSPEND) {
+    if (isNotSuspended(error)) {
       error = getError(error);
     }
   }
@@ -42,62 +34,59 @@ export function compute<TValue>(
     forget: true,
     start(state) {
       const subscriberId = getNextSubscriberId();
-      let queries: Record<string, Query<any, any>> = {};
+      let specs: Record<string, Spec<any>> = {};
 
       const unwatch = watch((get) => {
-        const nextQueries: Record<string, Query<any, any>> = {};
+        const nextSpecs: Record<string, Spec<any>> = {};
 
-        const getModel: GetModel = function (query) {
-          const queryState = initQueryState(query);
-          addSubscriber(query, subscriberId);
-          nextQueries[serializeQuery(query)] = query;
+        const getModel: GetSnapshot = function (spec) {
+          const state = initState(spec);
+          addSubscriber(spec, subscriberId);
+          nextSpecs[`${spec.key}:${serializeArgs(spec.args)}`] = spec;
 
           // Tell valtio to track the dependency
-          get(queryState);
+          get(state);
 
-          return toQueryResult(query, queryState);
+          return toSnapshot(spec, state);
         };
 
         try {
           state.value = fn(getModel);
         } catch (error) {
-          if (error !== SUSPEND) {
+          if (isNotSuspended(error)) {
             state.error = getError(error);
           }
         }
 
         // Unsubscribe from old queries
-        for (const key in queries) {
-          if (!nextQueries[key]) {
-            removeSubscriber(queries[key], subscriberId);
+        for (const key in specs) {
+          if (!nextSpecs[key]) {
+            removeSubscriber(specs[key], subscriberId);
           }
         }
-        queries = nextQueries;
+        specs = nextSpecs;
       });
 
       return function cleanup() {
         unwatch();
-        for (const key in queries) {
-          removeSubscriber(queries[key], subscriberId);
+        for (const key in specs) {
+          removeSubscriber(specs[key], subscriberId);
         }
       };
     },
   };
 }
 
-function toQueryResult<TArgs extends any[], TValue>(
-  query: Query<TArgs, TValue>,
-  queryState: QueryState<TValue>
-): QueryResult<TArgs, TValue> {
+function toSnapshot<T>(spec: Spec<T>, state: InternalState<T>): Snapshot<T> {
+  const v = state.value as Immutable<T>;
   return {
-    args: query.args,
-    maybeValue: queryState.value,
-    error: queryState.error,
+    maybeValue: v,
+    error: state.error,
     get value() {
-      if (isNotSuspended(queryState.value)) {
-        return queryState.value;
+      if (isNotSuspended(v)) {
+        return v;
       }
-      throw SUSPEND;
+      throw suspended();
     },
   };
 }

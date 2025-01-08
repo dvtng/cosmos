@@ -1,6 +1,7 @@
-import { suspended, type Spec, type Suspended } from "./core";
 import { getError } from "./get-error";
+import type { MinSpec } from "./model";
 import { SmartInterval, type Interval } from "./smart-interval";
+import { type Suspended, suspended } from "./suspended";
 
 export type RequestOptions = {
   refresh?: Interval;
@@ -9,7 +10,7 @@ export type RequestOptions = {
 export function request<T>(
   fn: () => Promise<T> | T,
   options: RequestOptions = {}
-): Spec<Suspended<T>> {
+): MinSpec<Suspended<T>> {
   return {
     value: suspended<T>(),
     forget: { minutes: 10 },

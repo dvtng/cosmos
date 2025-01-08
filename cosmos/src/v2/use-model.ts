@@ -1,43 +1,42 @@
 import { useSnapshot } from "valtio";
-import { type QueryResult, type Query, isNotSuspended } from "./core";
-import {
-  initQueryState,
-  removeSubscriber,
-  addSubscriber,
-  getPromise,
-} from "./state";
-import { serializeArgs } from "./serialize-query";
+import { type Snapshot, type Spec } from "./core";
+import { removeSubscriber, addSubscriber, getPromise } from "./cosmos";
+import { serializeArgs } from "./serialize-args";
 import { useLayoutEffect } from "react";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
+import { isNotSuspended } from "./suspended";
+import { getModel } from "./get-model";
+import type { Immutable } from "./immutable";
 
-export function useModel<TArgs extends any[], TValue>(
-  query: Query<TArgs, TValue>
-): QueryResult<TArgs, TValue> {
-  const $queryState = useSnapshot(initQueryState(query));
+export function useModel<T>(spec: Spec<T>): Snapshot<T> {
+  const $state = useSnapshot(getModel(spec));
 
   useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();
-    addSubscriber(query, subscriberId);
+    addSubscriber(spec, subscriberId);
 
     return () => {
-      removeSubscriber(query, subscriberId);
+      removeSubscriber(spec, subscriberId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.key, serializeArgs(query.args)]);
+  }, [spec.key, serializeArgs(spec.args)]);
 
   return {
-    args: query.args,
-    maybeValue: $queryState.value as TValue,
-    error: $queryState.error,
+    get maybeValue() {
+      return $state.value as Immutable<T>;
+    },
+    get error() {
+      return $state.error;
+    },
     get value() {
-      const v = $queryState.value as TValue;
+      const v = $state.value as Immutable<T>;
       if (isNotSuspended(v)) {
         return v;
       }
-      if ($queryState.error) {
-        throw $queryState.error;
+      if ($state.error) {
+        throw $state.error;
       }
-      throw getPromise(query);
+      throw getPromise(spec);
     },
   };
 }

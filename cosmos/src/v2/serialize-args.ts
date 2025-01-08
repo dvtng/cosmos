@@ -1,9 +1,4 @@
 import stableStringify from "safe-stable-stringify";
-import type { Query } from "./core";
-
-export function serializeQuery<TArgs extends any[]>(query: Query<TArgs, any>) {
-  return `${query.key}:${serializeArgs(query.args)}`;
-}
 
 const serializedArgsSymbol = Symbol("serializedArgs");
 

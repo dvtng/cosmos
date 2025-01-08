@@ -1,4 +1,4 @@
-import { compute, model, setModel, useModel } from "@dvtng/cosmos/src/v2";
+import { compute, getModel, model, useModel } from "@dvtng/cosmos/src/v2";
 import { AppState } from "./app-state";
 import { Counter } from "./counter";
 import { CounterView } from "./counter";
@@ -13,6 +13,12 @@ const CounterTotal = model(() => {
   });
 });
 
+const RoundedCounterTotal = model((nearest: number) => {
+  return compute((get) => {
+    return Math.round(get(CounterTotal()).value / nearest) * nearest;
+  });
+});
+
 export function Counters() {
   const appState = useModel(AppState());
 
@@ -23,10 +29,8 @@ export function Counters() {
         <button
           className="btn"
           onClick={() => {
-            setModel(AppState(), (state) => {
-              const id = state.value.nextCounterId++;
-              state.value.counters.push(id);
-            });
+            const appState = getModel(AppState());
+            appState.value.counters.push(appState.value.nextCounterId++);
           }}
         >
           Add Counter
@@ -40,6 +44,7 @@ export function Counters() {
 function CountersTable() {
   const appState = useModel(AppState());
   const counterTotal = useModel(CounterTotal());
+  const roundedCounterTotal = useModel(RoundedCounterTotal(10));
 
   return (
     <div className="grid grid-cols-[auto_1fr] *:p-3">
@@ -47,6 +52,10 @@ function CountersTable() {
         <span>Total</span>
         <span className="text-right">
           <NumberFlow value={counterTotal.value} />
+        </span>
+        <span>Rounded (nearest 10)</span>
+        <span className="text-right">
+          <NumberFlow value={roundedCounterTotal.value} />
         </span>
       </div>
       {appState.value.counters.map((id) => (
@@ -56,11 +65,10 @@ function CountersTable() {
             <button
               className="link"
               onClick={() => {
-                setModel(AppState(), (state) => {
-                  state.value.counters = state.value.counters.filter(
-                    (_id) => _id !== id
-                  );
-                });
+                const appState = getModel(AppState());
+                appState.value.counters = appState.value.counters.filter(
+                  (_id) => _id !== id
+                );
               }}
             >
               Remove

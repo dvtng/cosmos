@@ -2,14 +2,21 @@ import type { Model, Spec } from "./core";
 
 let nextModelId = 0;
 
+export type MinSpec<T> = { value: T } & Partial<Spec<T>>;
+
 /**
  * Creates a new model.
  */
 export function model<TArgs extends any[], TValue>(
-  resolve: (...args: TArgs) => Spec<TValue>
+  resolve: (...args: TArgs) => MinSpec<TValue>
 ): Model<TArgs, TValue> {
-  const key = `MODEL-${nextModelId++}`;
+  const defaultKey = `MODEL-${nextModelId++}`;
+
   return (...args) => {
-    return { key, args, resolve: resolve as any };
+    return {
+      key: defaultKey,
+      args,
+      ...resolve(...args),
+    };
   };
 }

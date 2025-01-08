@@ -17,9 +17,9 @@ export function compute<TValue>(
 
   // Try to compute a synchronous value
   try {
-    value = fn((query) => {
-      const queryState = initState(query);
-      return toSnapshot(query, queryState);
+    value = fn((spec) => {
+      const queryState = initState(spec);
+      return toSnapshot(spec, queryState);
     });
   } catch (error) {
     if (isNotSuspended(error)) {

@@ -5,9 +5,7 @@ let count = 0;
 
 export const CounterOnFocus = model(() => {
   return request(() => count++, {
-    refresh: {
-      onFocus: true,
-    },
+    refreshOnFocus: true,
   });
 });
 

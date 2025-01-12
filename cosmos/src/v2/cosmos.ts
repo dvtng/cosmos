@@ -4,6 +4,7 @@ import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "../duration";
 import { isNotSuspended, type NotSuspended } from "./suspended";
+import { setSmartTimer } from "../smart-timer";
 
 const KEEP_ALIVE_MS = 1000;
 
@@ -35,8 +36,8 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
         promise: undefined,
         subscribers: new Set<number>(),
         stop: undefined,
-        keepAliveTimer: undefined,
-        keepStaleTimer: undefined,
+        clearStopTimer: undefined,
+        clearForgetTimer: undefined,
       }),
     };
 
@@ -51,13 +52,13 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
   const { internal } = state;
   internal.subscribers.add(subscriberId);
 
-  if (internal.keepAliveTimer) {
-    window.clearTimeout(internal.keepAliveTimer);
-    internal.keepAliveTimer = undefined;
+  if (internal.clearStopTimer) {
+    internal.clearStopTimer();
+    internal.clearStopTimer = undefined;
   }
-  if (internal.keepStaleTimer) {
-    window.clearTimeout(internal.keepStaleTimer);
-    internal.keepStaleTimer = undefined;
+  if (internal.clearForgetTimer) {
+    internal.clearForgetTimer();
+    internal.clearForgetTimer = undefined;
   }
 
   if (!internal.alive) {
@@ -72,7 +73,7 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
 
       const forgetMs = toMs(spec.forget, null);
       if (forgetMs != null) {
-        internal.keepStaleTimer = window.setTimeout(() => {
+        internal.clearForgetTimer = setSmartTimer(() => {
           const serializedArgs = serializeArgs(spec.args);
           if (cosmos.states[spec.key]?.[serializedArgs] === state) {
             delete cosmos.states[spec.key][serializedArgs];
@@ -89,7 +90,7 @@ export function removeSubscriber<T>(spec: Spec<T>, subscriberId: number) {
   internal.subscribers.delete(subscriberId);
 
   if (internal.subscribers.size === 0 && internal.alive) {
-    internal.keepAliveTimer = window.setTimeout(() => {
+    internal.clearStopTimer = setSmartTimer(() => {
       internal.stop?.();
     }, KEEP_ALIVE_MS);
   }

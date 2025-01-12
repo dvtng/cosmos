@@ -73,7 +73,7 @@ const MAX_INT32 = 2 ** 31 - 1; // 24.8 days
 
 function safeSetTimeout(fn: () => void, timeout: number) {
   if (timeout > MAX_INT32) {
-    // Don't schedule
+    // Don't schedule, as it's unlikely to be in the lifetime of the app
     return 0;
   }
 

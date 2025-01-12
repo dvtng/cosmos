@@ -14,8 +14,8 @@ export type InternalState<T> = State<T> & {
     promise: Promise<State<NotSuspended<T>>> | undefined;
     subscribers: Set<number>;
     stop: (() => void) | undefined;
-    keepAliveTimer: number | undefined;
-    keepStaleTimer: number | undefined;
+    clearStopTimer: (() => void) | undefined;
+    clearForgetTimer: (() => void) | undefined;
   };
 };
 

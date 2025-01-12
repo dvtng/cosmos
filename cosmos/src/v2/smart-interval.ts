@@ -1,7 +1,9 @@
 import { toMs, type Duration } from "../duration";
 import { setSmartTimer } from "../smart-timer";
 
-export type Interval = Duration & {
+export type SmartIntervalOptions = {
+  initial?: Duration;
+  interval?: Duration;
   onFocus?: boolean;
 };
 
@@ -9,9 +11,15 @@ export class SmartInterval {
   cleanupTimer: (() => void) | undefined;
   cleanupFocus: (() => void) | undefined;
 
-  constructor(private fn: () => unknown, private interval?: Interval) {
+  constructor(
+    private fn: () => unknown,
+    private options: SmartIntervalOptions
+  ) {
     this.watchFocus();
-    this.run();
+    const scheduled = this.schedule(this.options.initial);
+    if (!scheduled) {
+      this.schedule(this.options.interval);
+    }
   }
 
   clear() {
@@ -19,16 +27,17 @@ export class SmartInterval {
     this.cleanupFocus?.();
   }
 
-  schedule(duration: Duration) {
+  schedule(duration: Duration | undefined) {
     const durationMs = toMs(duration, null);
     if (durationMs == null) {
-      return;
+      return false;
     }
 
     this.cleanupTimer?.();
     this.cleanupTimer = setSmartTimer(() => {
       this.run();
     }, durationMs);
+    return true;
   }
 
   private async run() {
@@ -38,13 +47,11 @@ export class SmartInterval {
       console.error(error);
     }
 
-    if (this.interval) {
-      this.schedule(this.interval);
-    }
+    this.schedule(this.options.interval);
   }
 
   private watchFocus() {
-    if (!this.interval?.onFocus) {
+    if (!this.options.onFocus) {
       return;
     }
 

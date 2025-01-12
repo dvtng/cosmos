@@ -4,11 +4,10 @@ import type { NotSuspended } from "./suspended";
 export type State<T> = {
   value: T;
   error: Error | undefined;
+  updatedAt: number;
 };
 
-export type InternalState<T> = {
-  value: T;
-  error: Error | undefined;
+export type InternalState<T> = State<T> & {
   internal: {
     alive: boolean;
     spec: Spec<T>;

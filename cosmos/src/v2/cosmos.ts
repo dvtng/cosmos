@@ -28,6 +28,7 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
     const state: InternalState<T> = {
       value: spec.value,
       error: spec.error,
+      updatedAt: 0,
       internal: ref({
         alive: false,
         spec,

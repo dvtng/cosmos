@@ -1,10 +1,12 @@
+import { toMs, type Duration } from "../duration";
 import { getError } from "./get-error";
 import type { MinSpec } from "./model";
-import { SmartInterval, type Interval } from "./smart-interval";
+import { SmartInterval } from "./smart-interval";
 import { type Suspended, suspended } from "./suspended";
 
 export type RequestOptions = {
-  refresh?: Interval;
+  refresh?: Duration;
+  refreshOnFocus?: boolean;
 };
 
 export function request<T>(
@@ -22,6 +24,7 @@ export function request<T>(
           const value = await fn();
           if (alive) {
             state.value = value;
+            state.updatedAt = Date.now();
           }
         } catch (error) {
           if (alive) {
@@ -30,7 +33,13 @@ export function request<T>(
         }
       }
 
-      const interval = new SmartInterval(run, options.refresh);
+      const refreshMs = options.refreshOnFocus ? 0 : toMs(options.refresh, 0);
+      const initialMs = Math.max(0, refreshMs - (Date.now() - state.updatedAt));
+      const interval = new SmartInterval(run, {
+        initial: { ms: initialMs },
+        interval: options.refresh,
+        onFocus: options.refreshOnFocus,
+      });
 
       return () => {
         alive = false;

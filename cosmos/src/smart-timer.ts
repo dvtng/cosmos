@@ -25,9 +25,9 @@ export const setSmartTimer = (
 
     const elapsedTime = Date.now() - startTime;
     if (elapsedTime >= _timeout) {
-      timerId = setTimeout(run, 0);
+      timerId = safeSetTimeout(run, 0);
     } else {
-      timerId = setTimeout(run, _timeout - elapsedTime);
+      timerId = safeSetTimeout(run, _timeout - elapsedTime);
     }
   };
 
@@ -57,7 +57,7 @@ export const setSmartTimer = (
   };
 
   if (!hasDoc || !document.hidden) {
-    timerId = setTimeout(run, _timeout);
+    timerId = safeSetTimeout(run, _timeout);
   }
 
   if (hasDoc) {
@@ -68,3 +68,14 @@ export const setSmartTimer = (
 
   return cleanup;
 };
+
+const MAX_INT32 = 2 ** 31 - 1; // 24.8 days
+
+function safeSetTimeout(fn: () => void, timeout: number) {
+  if (timeout > MAX_INT32) {
+    // Don't schedule
+    return 0;
+  }
+
+  return setTimeout(fn, timeout);
+}

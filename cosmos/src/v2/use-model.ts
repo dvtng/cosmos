@@ -4,7 +4,7 @@ import { removeSubscriber, addSubscriber, getPromise } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { useLayoutEffect } from "react";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { isNotSuspended } from "./suspended";
+import { match } from "./later";
 import { getModel } from "./get-model";
 
 export function useModel<T>(spec: Spec<T>): Snapshot<T> {
@@ -21,21 +21,18 @@ export function useModel<T>(spec: Spec<T>): Snapshot<T> {
   }, [spec.key, serializeArgs(spec.args)]);
 
   return {
-    get maybeValue() {
-      return $state.value as T;
-    },
-    get error() {
-      return $state.error;
+    match: (cases) => {
+      const v = $state.value as T;
+      return match(v, cases);
     },
     get value() {
       const v = $state.value as T;
-      if (isNotSuspended(v)) {
-        return v;
-      }
-      if ($state.error) {
-        throw $state.error;
-      }
-      throw getPromise(spec);
+      return match(v, {
+        value: (value) => value,
+        loading: () => {
+          throw getPromise(spec);
+        },
+      });
     },
   };
 }

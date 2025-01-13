@@ -2,7 +2,7 @@ import { toMs, type Duration } from "../duration";
 import { getError } from "./get-error";
 import type { MinSpec } from "./model";
 import { SmartInterval } from "./smart-interval";
-import { type Suspended, suspended } from "./suspended";
+import { later, type Later } from "./later";
 
 export type RequestOptions = {
   refresh?: Duration;
@@ -12,9 +12,9 @@ export type RequestOptions = {
 export function request<T>(
   fn: () => Promise<T> | T,
   options: RequestOptions = {}
-): MinSpec<Suspended<T>> {
+): MinSpec<Later<T>> {
   return {
-    value: suspended<T>(),
+    value: later<T>(),
     forget: { minutes: 10 },
     start: (state, { alive }) => {
       async function run() {
@@ -26,7 +26,7 @@ export function request<T>(
           }
         } catch (error) {
           if (alive) {
-            state.error = getError(error);
+            state.value = getError(error);
           }
         }
       }

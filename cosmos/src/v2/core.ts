@@ -1,9 +1,8 @@
 import type { Duration } from "../duration";
-import type { NotSuspended } from "./suspended";
+import type { Cases, Ready } from "./later";
 
 export type State<T> = {
   value: T;
-  error: Error | undefined;
   updatedAt: number;
 };
 
@@ -11,7 +10,7 @@ export type InternalState<T> = State<T> & {
   internal: {
     alive: boolean;
     spec: Spec<T>;
-    promise: Promise<State<NotSuspended<T>>> | undefined;
+    promise: Promise<State<Ready<T>>> | undefined;
     subscribers: Set<number>;
     stop: (() => void) | undefined;
     clearStopTimer: (() => void) | undefined;
@@ -24,14 +23,13 @@ export type Model<Args extends any[], T> = (...args: Args) => Spec<T>;
 export type Spec<T> = {
   key: string;
   args: unknown[];
-  value: T;
+  value: T | (() => T);
   error?: Error;
   start?: (state: State<T>, meta: { alive: boolean }) => (() => void) | void;
   forget?: Duration | true;
 };
 
 export type Snapshot<T> = {
-  value: NotSuspended<T>;
-  maybeValue: T;
-  error: Error | undefined;
+  match: <V>(cases: Cases<T, V>) => V;
+  value: Ready<T>;
 };

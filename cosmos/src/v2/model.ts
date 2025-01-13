@@ -2,7 +2,7 @@ import type { Model, Spec } from "./core";
 
 let nextModelId = 0;
 
-export type MinSpec<T> = { value: T } & Partial<Spec<T>>;
+export type MinSpec<T> = { value: Spec<T>["value"] } & Partial<Spec<T>>;
 
 /**
  * Creates a new model.

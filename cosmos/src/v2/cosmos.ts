@@ -3,7 +3,7 @@ import { type InternalState, type Spec, type State } from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "../duration";
-import { isNotSuspended, type NotSuspended } from "./suspended";
+import { match, type Ready } from "./later";
 import { setSmartTimer } from "../smart-timer";
 
 const KEEP_ALIVE_MS = 1000;
@@ -27,8 +27,10 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
 
   if (!cosmos.states[spec.key][serializedArgs]) {
     const state: InternalState<T> = {
-      value: spec.value,
-      error: spec.error,
+      value:
+        typeof spec.value === "function"
+          ? (spec.value as () => T)()
+          : spec.value,
       updatedAt: 0,
       internal: ref({
         alive: false,
@@ -104,35 +106,33 @@ export function getPromise<T>(spec: Spec<T>) {
   const state = initState(spec);
 
   if (!state.internal.promise) {
-    state.internal.promise = new Promise<State<NotSuspended<T>>>(
-      (resolve, reject) => {
-        if (isNotSuspended(state.value)) {
-          resolve(state as State<NotSuspended<T>>);
-          return;
-        }
-
-        if (state.error) {
-          reject(state.error);
-          return;
-        }
-
-        const subscriberId = getNextSubscriberId();
-        const unsubscribe = subscribe(state, () => {
-          if (isNotSuspended(state.value) || state.error) {
-            unsubscribe();
-            removeSubscriber(spec, subscriberId);
-            if (isNotSuspended(state.value)) {
-              resolve(state as State<NotSuspended<T>>);
-            } else {
-              reject(state.error);
-            }
-          }
-        });
-        // Add subscriber after watching the state,
-        // because the model may synchronously emit a value
-        addSubscriber(spec, subscriberId);
-      }
-    );
+    state.internal.promise = new Promise<State<Ready<T>>>((resolve, reject) => {
+      match(state.value, {
+        value: () => resolve(state as State<Ready<T>>),
+        error: (error) => reject(error),
+        loading: () => {
+          const subscriberId = getNextSubscriberId();
+          const unsubscribe = subscribe(state, () => {
+            match(state.value, {
+              value: () => {
+                unsubscribe();
+                removeSubscriber(spec, subscriberId);
+                resolve(state as State<Ready<T>>);
+              },
+              error: (error) => {
+                unsubscribe();
+                removeSubscriber(spec, subscriberId);
+                reject(error);
+              },
+              loading: () => {},
+            });
+          });
+          // Add subscriber after watching the state,
+          // because the model may synchronously emit a value
+          addSubscriber(spec, subscriberId);
+        },
+      });
+    });
   }
 
   return state.internal.promise;

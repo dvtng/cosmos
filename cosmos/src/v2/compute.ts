@@ -5,32 +5,29 @@ import { addSubscriber, initState, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { getError } from "./get-error";
 import type { MinSpec } from "./model";
-import { type Suspended, isNotSuspended, suspended } from "./suspended";
+import { type Later, isLoading, later, match } from "./later";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
 export function compute<TValue>(
-  fn: (get: GetSnapshot) => Suspended<TValue>
-): MinSpec<Suspended<TValue>> {
-  let value = suspended<TValue>();
-  let error: Error | undefined;
-
-  // Try to compute a synchronous value
-  try {
-    value = fn((spec) => {
-      const queryState = initState(spec);
-      return toSnapshot(spec, queryState);
-    });
-  } catch (error) {
-    if (isNotSuspended(error)) {
-      error = getError(error);
-    }
-  }
-
+  fn: (get: GetSnapshot) => Later<TValue>
+): MinSpec<Later<TValue>> {
   return {
-    value,
-    error,
     forget: true,
+    value: () => {
+      try {
+        return fn((spec) => {
+          const queryState = initState(spec);
+          return toSnapshot(spec, queryState);
+        });
+      } catch (error) {
+        if (isLoading(error)) {
+          return later();
+        } else {
+          return getError(error);
+        }
+      }
+    },
     start(state) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
@@ -52,8 +49,8 @@ export function compute<TValue>(
         try {
           state.value = fn(getModel);
         } catch (error) {
-          if (isNotSuspended(error)) {
-            state.error = getError(error);
+          if (!isLoading(error)) {
+            state.value = getError(error);
           }
         }
 
@@ -79,13 +76,16 @@ export function compute<TValue>(
 function toSnapshot<T>(spec: Spec<T>, state: InternalState<T>): Snapshot<T> {
   const v = state.value;
   return {
-    maybeValue: v,
-    error: state.error,
+    match: (cases) => {
+      return match(v, cases);
+    },
     get value() {
-      if (isNotSuspended(v)) {
-        return v;
-      }
-      throw suspended();
+      return match(v, {
+        value: (value) => value,
+        loading: () => {
+          throw later();
+        },
+      });
     },
   };
 }

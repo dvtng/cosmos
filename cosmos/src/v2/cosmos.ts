@@ -65,7 +65,11 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
     internal.alive = true;
     // TODO do we need to store and use an internal spec here?
     const { spec } = internal;
-    const stop = spec.start?.(state);
+    const stop = spec.start?.(state, {
+      get alive() {
+        return internal.alive;
+      },
+    });
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;

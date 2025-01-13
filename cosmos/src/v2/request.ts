@@ -16,9 +16,7 @@ export function request<T>(
   return {
     value: suspended<T>(),
     forget: { minutes: 10 },
-    start: (state) => {
-      let alive = true;
-
+    start: (state, { alive }) => {
       async function run() {
         try {
           const value = await fn();
@@ -42,7 +40,6 @@ export function request<T>(
       });
 
       return () => {
-        alive = false;
         interval.clear();
       };
     },

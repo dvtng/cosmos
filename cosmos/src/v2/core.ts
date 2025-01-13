@@ -26,7 +26,7 @@ export type Spec<T> = {
   args: unknown[];
   value: T;
   error?: Error;
-  start?: (state: State<T>) => (() => void) | void;
+  start?: (state: State<T>, meta: { alive: boolean }) => (() => void) | void;
   forget?: Duration | true;
 };
 

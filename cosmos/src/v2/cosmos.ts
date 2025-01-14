@@ -26,7 +26,7 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
   let serializedArgs = serializeArgs(spec.args);
 
   if (!cosmos.states[spec.key][serializedArgs]) {
-    const state: InternalState<T> = {
+    const state: InternalState<T> = proxy({
       value:
         typeof spec.value === "function"
           ? (spec.value as () => T)()
@@ -40,8 +40,24 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
         stop: undefined,
         clearStopTimer: undefined,
         clearForgetTimer: undefined,
+        onDeleteHandlers: [],
       }),
-    };
+    });
+
+    spec.onLoad?.(state);
+
+    const onSet = spec.onSet;
+    if (onSet) {
+      const unsubscribe = subscribe(state, () => {
+        onSet(state);
+      });
+      state.internal.onDeleteHandlers.push(unsubscribe);
+    }
+
+    const onDelete = spec.onDelete;
+    if (onDelete) {
+      state.internal.onDeleteHandlers.push(onDelete);
+    }
 
     states[spec.key][serializedArgs] = state;
   }

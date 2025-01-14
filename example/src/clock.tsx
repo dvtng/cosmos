@@ -2,7 +2,7 @@ import { model, useModel } from "@dvtng/cosmos/src/v2";
 
 export const Time = model(() => {
   return {
-    value: new Date(),
+    value: () => new Date(),
     onStart(state) {
       const interval = setInterval(() => {
         state.value = new Date();

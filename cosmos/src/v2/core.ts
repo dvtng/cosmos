@@ -15,6 +15,7 @@ export type InternalState<T> = State<T> & {
     stop: (() => void) | undefined;
     clearStopTimer: (() => void) | undefined;
     clearForgetTimer: (() => void) | undefined;
+    onDeleteHandlers: (() => void)[];
   };
 };
 
@@ -25,7 +26,10 @@ export type Spec<T> = {
   args: unknown[];
   value: T | (() => T);
   forget?: Duration | true;
+  onLoad?: (state: State<T>) => void;
   onStart?: (state: State<T>) => (() => void) | void;
+  onSet?: (state: State<T>) => void;
+  onDelete?: () => void;
 };
 
 export type Snapshot<T> = {

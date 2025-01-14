@@ -1,7 +1,7 @@
 import { model, request, useModel } from "@dvtng/cosmos/src/v2";
 import NumberFlow from "@number-flow/react";
 
-export const CoinPrice = model((coinId: string) => {
+export const CoinPrice = model("CoinPrice", (coinId: string) => {
   return request(
     () =>
       fetch(`https://api.coinpaprika.com/v1/tickers/${coinId}`, {

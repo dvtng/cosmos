@@ -19,22 +19,20 @@ export const cosmos = proxy<Cosmos>({
 export function initState<T>(spec: Spec<T>): InternalState<T> {
   const { states } = cosmos;
 
-  if (!states[spec.key]) {
-    states[spec.key] = {};
+  if (!states[spec.name]) {
+    states[spec.name] = {};
   }
 
   let serializedArgs = serializeArgs(spec.args);
 
-  if (!cosmos.states[spec.key][serializedArgs]) {
+  if (!cosmos.states[spec.name][serializedArgs]) {
+    const behavior = spec.resolve();
     const state: InternalState<T> = proxy({
-      value:
-        typeof spec.value === "function"
-          ? (spec.value as () => T)()
-          : spec.value,
+      value: behavior.value,
       updatedAt: 0,
       internal: ref({
         alive: false,
-        spec,
+        behavior,
         promise: undefined,
         subscribers: new Set<number>(),
         stop: undefined,
@@ -44,25 +42,25 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
       }),
     });
 
-    spec.onLoad?.(state);
+    behavior.onLoad?.(state);
 
-    const onSet = spec.onSet;
-    if (onSet) {
+    const onWrite = behavior.onWrite;
+    if (onWrite) {
       const unsubscribe = subscribe(state, () => {
-        onSet(state);
+        onWrite(state);
       });
       state.internal.onDeleteHandlers.push(unsubscribe);
     }
 
-    const onDelete = spec.onDelete;
+    const onDelete = behavior.onDelete;
     if (onDelete) {
       state.internal.onDeleteHandlers.push(onDelete);
     }
 
-    states[spec.key][serializedArgs] = state;
+    states[spec.name][serializedArgs] = state;
   }
 
-  return states[spec.key][serializedArgs];
+  return states[spec.name][serializedArgs];
 }
 
 export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
@@ -81,20 +79,19 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
 
   if (!internal.alive) {
     internal.alive = true;
-    // TODO do we need to store and use an internal spec here?
-    const { spec } = internal;
-    const stop = spec.onStart?.(state);
+    const { behavior } = internal;
+    const stop = behavior.onStart?.(state);
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;
       stop?.();
 
-      const forgetMs = toMs(spec.forget, null);
+      const forgetMs = toMs(behavior.forget, null);
       if (forgetMs != null) {
         internal.clearForgetTimer = setSmartTimer(() => {
           const serializedArgs = serializeArgs(spec.args);
-          if (cosmos.states[spec.key]?.[serializedArgs] === state) {
-            delete cosmos.states[spec.key][serializedArgs];
+          if (cosmos.states[spec.name]?.[serializedArgs] === state) {
+            delete cosmos.states[spec.name][serializedArgs];
           }
         }, forgetMs);
       }

@@ -18,7 +18,7 @@ export function useModel<T>(spec: Spec<T>): Snapshot<T> {
       removeSubscriber(spec, subscriberId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec.key, serializeArgs(spec.args)]);
+  }, [spec.name, serializeArgs(spec.args)]);
 
   return {
     match: (cases) => {

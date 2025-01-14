@@ -1,7 +1,7 @@
 import { toMs, type Duration } from "../duration";
-import type { MinSpec } from "./model";
 import { SmartInterval } from "./smart-interval";
 import { asError, later, type Later } from "./later";
+import type { Behavior } from "./core";
 
 export type RequestOptions = {
   refresh?: Duration;
@@ -11,7 +11,7 @@ export type RequestOptions = {
 export function request<T>(
   fn: () => Promise<T> | T,
   options: RequestOptions = {}
-): MinSpec<Later<T>> {
+): Behavior<Later<T>> {
   return {
     value: later<T>(),
     forget: { minutes: 10 },

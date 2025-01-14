@@ -1,19 +1,23 @@
 import { watch } from "valtio/utils";
-import { type Snapshot, type InternalState, type Spec } from "./core";
+import {
+  type Snapshot,
+  type InternalState,
+  type Spec,
+  type Behavior,
+} from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { addSubscriber, initState, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
-import type { MinSpec } from "./model";
 import { type Later, asError, isLoading, later, match } from "./later";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
 export function compute<TValue>(
   fn: (get: GetSnapshot) => Later<TValue>
-): MinSpec<Later<TValue>> {
+): Behavior<Later<TValue>> {
   return {
     forget: true,
-    value: () => {
+    value: (() => {
       try {
         return fn((spec) => {
           const queryState = initState(spec);
@@ -26,7 +30,7 @@ export function compute<TValue>(
           return asError(error);
         }
       }
-    },
+    })(),
     onStart(state) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
@@ -37,7 +41,7 @@ export function compute<TValue>(
         const getModel: GetSnapshot = function (spec) {
           const state = initState(spec);
           addSubscriber(spec, subscriberId);
-          nextSpecs[`${spec.key}:${serializeArgs(spec.args)}`] = spec;
+          nextSpecs[`${spec.name}:${serializeArgs(spec.args)}`] = spec;
 
           // Tell valtio to track the dependency
           get(state);

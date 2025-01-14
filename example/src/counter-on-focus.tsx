@@ -3,7 +3,7 @@ import NumberFlow from "@number-flow/react";
 
 let count = 0;
 
-export const CounterOnFocus = model(() => {
+export const CounterOnFocus = model("CounterOnFocus", () => {
   return request(() => count++, {
     refreshOnFocus: true,
   });

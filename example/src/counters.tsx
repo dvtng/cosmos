@@ -5,7 +5,7 @@ import { CounterView } from "./counter";
 import { Fragment } from "react/jsx-runtime";
 import NumberFlow from "@number-flow/react";
 
-const CounterTotal = model(() => {
+const CounterTotal = model("CounterTotal", () => {
   return compute((get) => {
     return get(AppState()).value.counters.reduce((acc, id) => {
       return acc + get(Counter(id)).value;
@@ -13,7 +13,7 @@ const CounterTotal = model(() => {
   });
 });
 
-const RoundedCounterTotal = model((nearest: number) => {
+const RoundedCounterTotal = model("RoundedCounterTotal", (nearest: number) => {
   return compute((get) => {
     return Math.round(get(CounterTotal()).value / nearest) * nearest;
   });

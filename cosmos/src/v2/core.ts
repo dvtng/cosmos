@@ -9,7 +9,7 @@ export type State<T> = {
 export type InternalState<T> = State<T> & {
   internal: {
     alive: boolean;
-    spec: Spec<T>;
+    behavior: Behavior<T>;
     promise: Promise<State<Ready<T>>> | undefined;
     subscribers: Set<number>;
     stop: (() => void) | undefined;
@@ -19,16 +19,20 @@ export type InternalState<T> = State<T> & {
   };
 };
 
-export type Model<Args extends any[], T> = (...args: Args) => Spec<T>;
+export type Model<A extends any[], T> = (...args: A) => Spec<T>;
 
 export type Spec<T> = {
-  key: string;
+  name: string;
   args: unknown[];
-  value: T | (() => T);
+  resolve: () => Behavior<T>;
+};
+
+export type Behavior<T> = {
+  value: T;
   forget?: Duration | true;
   onLoad?: (state: State<T>) => void;
   onStart?: (state: State<T>) => (() => void) | void;
-  onSet?: (state: State<T>) => void;
+  onWrite?: (state: State<T>) => void;
   onDelete?: () => void;
 };
 

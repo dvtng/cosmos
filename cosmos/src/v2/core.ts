@@ -36,6 +36,8 @@ export type Behavior<T> = {
   onDelete?: () => void;
 };
 
+export type Trait<T> = Partial<Behavior<T>>;
+
 export type Snapshot<T> = {
   match: <V>(cases: Cases<T, V>) => V;
   value: Ready<T>;

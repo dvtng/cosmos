@@ -1,6 +1,5 @@
 import type { Behavior, Model } from "./core";
-
-let nextModelId = 0;
+import { combineBehavior, type Traits } from "./combine-behavior";
 
 export function model<A extends any[], V>(resolve: Resolve<A, V>): Model<A, V>;
 
@@ -25,7 +24,7 @@ export function model<A extends any[], V>(
     return {
       name: _identity.name,
       args: _identity.args(...args),
-      resolve: () => _resolve(...args),
+      resolve: () => combineBehavior(_resolve(...args)),
     };
   };
 }
@@ -35,7 +34,9 @@ type Identity<A extends any[]> = {
   args: (...args: A) => unknown[];
 };
 
-type Resolve<A extends any[], V> = (...args: A) => Behavior<V>;
+type Resolve<A extends any[], V> = (...args: A) => Behavior<V> | Traits<V>;
+
+let nextModelId = 0;
 
 function toIdentity<A extends any[]>(
   identity: string | Partial<Identity<A>>

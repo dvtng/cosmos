@@ -24,9 +24,8 @@ export type Spec<T> = {
   key: string;
   args: unknown[];
   value: T | (() => T);
-  error?: Error;
-  start?: (state: State<T>, meta: { alive: boolean }) => (() => void) | void;
   forget?: Duration | true;
+  onStart?: (state: State<T>) => (() => void) | void;
 };
 
 export type Snapshot<T> = {

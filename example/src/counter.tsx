@@ -6,7 +6,7 @@ export const Counter = model((id: number) => {
     key: "Counter",
     value: 0,
     forget: true,
-    start: (state) => {
+    onStart: (state) => {
       const interval = setInterval(() => {
         state.value++;
       }, 1000);

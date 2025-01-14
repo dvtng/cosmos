@@ -1,8 +1,7 @@
 import { toMs, type Duration } from "../duration";
-import { getError } from "./get-error";
 import type { MinSpec } from "./model";
 import { SmartInterval } from "./smart-interval";
-import { later, type Later } from "./later";
+import { asError, later, type Later } from "./later";
 
 export type RequestOptions = {
   refresh?: Duration;
@@ -16,7 +15,9 @@ export function request<T>(
   return {
     value: later<T>(),
     forget: { minutes: 10 },
-    start: (state, { alive }) => {
+    onStart: (state) => {
+      let alive = true;
+
       async function run() {
         try {
           const value = await fn();
@@ -26,7 +27,7 @@ export function request<T>(
           }
         } catch (error) {
           if (alive) {
-            state.value = getError(error);
+            state.value = asError(error);
           }
         }
       }
@@ -40,6 +41,7 @@ export function request<T>(
       });
 
       return () => {
+        alive = false;
         interval.clear();
       };
     },

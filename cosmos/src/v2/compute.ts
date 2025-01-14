@@ -3,9 +3,8 @@ import { type Snapshot, type InternalState, type Spec } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { addSubscriber, initState, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
-import { getError } from "./get-error";
 import type { MinSpec } from "./model";
-import { type Later, isLoading, later, match } from "./later";
+import { type Later, asError, isLoading, later, match } from "./later";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -22,13 +21,13 @@ export function compute<TValue>(
         });
       } catch (error) {
         if (isLoading(error)) {
-          return later();
+          return error;
         } else {
-          return getError(error);
+          return asError(error);
         }
       }
     },
-    start(state) {
+    onStart(state) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
 
@@ -49,8 +48,10 @@ export function compute<TValue>(
         try {
           state.value = fn(getModel);
         } catch (error) {
-          if (!isLoading(error)) {
-            state.value = getError(error);
+          if (isLoading(error)) {
+            state.value = error;
+          } else {
+            state.value = asError(error);
           }
         }
 
@@ -63,7 +64,7 @@ export function compute<TValue>(
         specs = nextSpecs;
       });
 
-      return function cleanup() {
+      return function stop() {
         unwatch();
         for (const key in specs) {
           removeSubscriber(specs[key], subscriberId);

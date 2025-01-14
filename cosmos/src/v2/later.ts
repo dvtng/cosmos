@@ -40,3 +40,7 @@ export function isLoading(value: unknown): value is Loading {
 export function isError(value: unknown): value is Error {
   return value instanceof Error;
 }
+
+export function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}

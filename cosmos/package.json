@@ -1,6 +1,6 @@
 {
   "name": "@dvtng/cosmos",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "module": "dist/index.js",
   "type": "module",
   "types": "dist/index.d.ts",

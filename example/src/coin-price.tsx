@@ -22,6 +22,7 @@ export function CoinPriceView({ coinId }: { coinId: string }) {
 
   return coinPrice.match({
     loading: () => <div>Loading...</div>,
+    error: (error) => <div className="text-red-500">{error.message}</div>,
     value: (value) => (
       <NumberFlow
         value={value}

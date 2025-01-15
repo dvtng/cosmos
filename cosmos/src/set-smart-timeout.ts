@@ -1,10 +1,13 @@
 /**
- * Timer that pauses when the page is backgrounded.
+ * A better setTimeout:
+ * - pauses when the page is backgrounded.
+ * - avoids setTimeout overflow.
+ * - returns a cancel function.
  */
 
 const hasDoc = typeof window !== "undefined" && "document" in window;
 
-export const setSmartTimer = (
+export const setSmartTimeout = (
   fn: () => void,
   timeout: number
 ): (() => void) => {
@@ -25,9 +28,9 @@ export const setSmartTimer = (
 
     const elapsedTime = Date.now() - startTime;
     if (elapsedTime >= _timeout) {
-      timerId = safeSetTimeout(run, 0);
+      timerId = setSafeTimeout(run, 0);
     } else {
-      timerId = safeSetTimeout(run, _timeout - elapsedTime);
+      timerId = setSafeTimeout(run, _timeout - elapsedTime);
     }
   };
 
@@ -39,7 +42,7 @@ export const setSmartTimer = (
     }
   };
 
-  const cleanup = () => {
+  const cancel = () => {
     if (hasDoc) {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       document.removeEventListener("freeze", pause);
@@ -49,7 +52,7 @@ export const setSmartTimer = (
   };
 
   const run = () => {
-    cleanup();
+    cancel();
     if (!hasRun) {
       hasRun = true;
       fn();
@@ -57,7 +60,7 @@ export const setSmartTimer = (
   };
 
   if (!hasDoc || !document.hidden) {
-    timerId = safeSetTimeout(run, _timeout);
+    timerId = setSafeTimeout(run, _timeout);
   }
 
   if (hasDoc) {
@@ -66,12 +69,12 @@ export const setSmartTimer = (
     document.addEventListener("resume", resume);
   }
 
-  return cleanup;
+  return cancel;
 };
 
 const MAX_INT32 = 2 ** 31 - 1; // 24.8 days
 
-function safeSetTimeout(fn: () => void, timeout: number) {
+function setSafeTimeout(fn: () => void, timeout: number) {
   if (timeout > MAX_INT32) {
     // Don't schedule, as it's unlikely to be in the lifetime of the app
     return 0;

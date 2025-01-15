@@ -4,7 +4,7 @@ import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "../duration";
 import { match, type Ready } from "./later";
-import { setSmartTimer } from "../smart-timer";
+import { setSmartTimeout } from "../set-smart-timeout";
 
 const KEEP_ALIVE_MS = 1000;
 
@@ -88,7 +88,7 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
 
       const forgetMs = toMs(behavior.forget, null);
       if (forgetMs != null) {
-        internal.clearForgetTimer = setSmartTimer(() => {
+        internal.clearForgetTimer = setSmartTimeout(() => {
           const serializedArgs = serializeArgs(spec.args);
           if (cosmos.states[spec.name]?.[serializedArgs] === state) {
             delete cosmos.states[spec.name][serializedArgs];
@@ -105,7 +105,7 @@ export function removeSubscriber<T>(spec: Spec<T>, subscriberId: number) {
   internal.subscribers.delete(subscriberId);
 
   if (internal.subscribers.size === 0 && internal.alive) {
-    internal.clearStopTimer = setSmartTimer(() => {
+    internal.clearStopTimer = setSmartTimeout(() => {
       internal.stop?.();
     }, KEEP_ALIVE_MS);
   }

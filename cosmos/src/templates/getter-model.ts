@@ -1,6 +1,6 @@
 import type { Model } from "../core-types";
 import { toMs, type Duration } from "../duration";
-import { setSmartTimer } from "../smart-timer";
+import { setSmartTimeout } from "../set-smart-timeout";
 
 /**
  * A GetterModel is an asynchronous request/response style model.
@@ -76,7 +76,7 @@ export function fromGetterModel<T, P extends object | void>(
         if (scheduledRefreshTime == null || expiry < scheduledRefreshTime) {
           clearTimer?.();
           scheduledRefreshTime = expiry;
-          clearTimer = setSmartTimer(get, ms);
+          clearTimer = setSmartTimeout(get, ms);
         }
       }
 

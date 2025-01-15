@@ -1,7 +1,8 @@
-import { toMs, type Duration } from "../duration";
-import { SmartInterval } from "./smart-interval";
+import { type Duration } from "../duration";
 import { asError, later, type Later } from "./later";
 import type { Behavior } from "./core";
+import { Timer } from "./timer";
+import { addWindowListener } from "./dom";
 
 export type RequestOptions = {
   refresh?: Duration;
@@ -18,6 +19,8 @@ export function request<T>(
     onStart: (state) => {
       let alive = true;
 
+      const timer = new Timer();
+
       async function run() {
         try {
           const value = await fn();
@@ -28,21 +31,37 @@ export function request<T>(
         } catch (error) {
           if (alive) {
             state.value = asError(error);
+            state.updatedAt = Date.now();
           }
         }
       }
 
-      const refreshMs = options.refreshOnFocus ? 0 : toMs(options.refresh, 0);
-      const initialMs = Math.max(0, refreshMs - (Date.now() - state.updatedAt));
-      const interval = new SmartInterval(run, {
-        initial: { ms: initialMs },
-        interval: options.refresh,
-        onFocus: options.refreshOnFocus,
+      if (options.refresh) {
+        timer.onIdle(() => {
+          timer.schedule({
+            run,
+            duration: options.refresh,
+            since: state.updatedAt,
+          });
+        });
+      }
+
+      const removeFocusListener = options.refreshOnFocus
+        ? addWindowListener("focus", () => {
+            timer.schedule({ run, since: state.updatedAt });
+          })
+        : undefined;
+
+      timer.schedule({
+        run,
+        duration: options.refresh,
+        since: state.updatedAt,
       });
 
       return () => {
         alive = false;
-        interval.clear();
+        removeFocusListener?.();
+        timer.destroy();
       };
     },
   };

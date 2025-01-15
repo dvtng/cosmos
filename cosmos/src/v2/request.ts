@@ -15,7 +15,6 @@ export function request<T>(
 ): Behavior<Later<T>> {
   return {
     value: later<T>(),
-    forget: { minutes: 10 },
     onStart: (state) => {
       let alive = true;
 

@@ -6,3 +6,4 @@ export * from "./set-model";
 export * from "./get-model";
 export * from "./compute";
 export * from "./request";
+export * from "./persist";

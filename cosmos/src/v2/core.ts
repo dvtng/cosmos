@@ -6,7 +6,8 @@ export type State<T> = {
   updatedAt: number;
 };
 
-export type InternalState<T> = State<T> & {
+export type Space<T> = {
+  state: State<T>;
   internal: {
     alive: boolean;
     behavior: Behavior<T>;
@@ -30,13 +31,18 @@ export type Spec<T> = {
 export type Behavior<T> = {
   value: T;
   forget?: Duration | true;
-  onLoad?: (state: State<T>) => void;
-  onStart?: (state: State<T>) => (() => void) | void;
-  onWrite?: (state: State<T>) => void;
-  onDelete?: () => void;
+  onLoad?: (state: State<T>, meta: Meta) => void;
+  onStart?: (state: State<T>, meta: Meta) => (() => void) | void;
+  onWrite?: (state: State<T>, meta: Meta) => void;
+  onDelete?: (state: State<T>, meta: Meta) => void;
 };
 
-export type Trait<T> = Partial<Behavior<T>>;
+export type Trait = Omit<Behavior<unknown>, "value">;
+
+export type Meta = {
+  name: string;
+  args: unknown[];
+};
 
 export type Snapshot<T> = {
   match: <V>(cases: Cases<T, V>) => V;

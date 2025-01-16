@@ -4,7 +4,7 @@ import { QueryView } from "./query-view";
 
 export function ModelView({ modelKey }: { modelKey: string }) {
   const $state = useSnapshot(cosmos);
-  const queries = $state.states[modelKey];
+  const queries = $state.spaces[modelKey];
 
   if (!queries) return null;
 

@@ -1,14 +1,10 @@
 import { watch } from "valtio/utils";
-import {
-  type Snapshot,
-  type InternalState,
-  type Spec,
-  type Behavior,
-} from "./core";
+import { type Snapshot, type Spec, type Behavior, type State } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { addSubscriber, initState, removeSubscriber } from "./cosmos";
+import { addSubscriber, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { type Later, asError, isLoading, later, match } from "./later";
+import { getModel } from "./get-model";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -20,8 +16,8 @@ export function compute<TValue>(
     value: (() => {
       try {
         return fn((spec) => {
-          const queryState = initState(spec);
-          return toSnapshot(spec, queryState);
+          const state = getModel(spec);
+          return toSnapshot(spec, state);
         });
       } catch (error) {
         if (isLoading(error)) {
@@ -35,22 +31,22 @@ export function compute<TValue>(
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
 
-      const unwatch = watch((get) => {
+      const unwatch = watch((track) => {
         const nextSpecs: Record<string, Spec<any>> = {};
 
-        const getModel: GetSnapshot = function (spec) {
-          const state = initState(spec);
+        const getSnapshot: GetSnapshot = function (spec) {
+          const state = getModel(spec);
           addSubscriber(spec, subscriberId);
           nextSpecs[`${spec.name}:${serializeArgs(spec.args)}`] = spec;
 
           // Tell valtio to track the dependency
-          get(state);
+          track(state);
 
           return toSnapshot(spec, state);
         };
 
         try {
-          state.value = fn(getModel);
+          state.value = fn(getSnapshot);
         } catch (error) {
           if (isLoading(error)) {
             state.value = error;
@@ -78,7 +74,7 @@ export function compute<TValue>(
   };
 }
 
-function toSnapshot<T>(spec: Spec<T>, state: InternalState<T>): Snapshot<T> {
+function toSnapshot<T>(spec: Spec<T>, state: State<T>): Snapshot<T> {
   const v = state.value;
   return {
     match: (cases) => {

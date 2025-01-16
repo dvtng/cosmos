@@ -1,5 +1,5 @@
 import { proxy, subscribe, ref } from "valtio";
-import { type InternalState, type Spec, type State } from "./core";
+import { type Space, type Meta, type Spec, type State } from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "../duration";
@@ -9,27 +9,29 @@ import { setSmartTimeout } from "../set-smart-timeout";
 const KEEP_ALIVE_MS = 1000;
 
 export type Cosmos = {
-  states: Record<string, Record<string, InternalState<any>>>;
+  spaces: Record<string, Record<string, Space<any>>>;
 };
 
 export const cosmos = proxy<Cosmos>({
-  states: {},
+  spaces: {},
 });
 
-export function initState<T>(spec: Spec<T>): InternalState<T> {
-  const { states } = cosmos;
+export function initSpace<T>(spec: Spec<T>): Space<T> {
+  const { spaces } = cosmos;
 
-  if (!states[spec.name]) {
-    states[spec.name] = {};
+  if (!spaces[spec.name]) {
+    spaces[spec.name] = {};
   }
 
   let serializedArgs = serializeArgs(spec.args);
 
-  if (!cosmos.states[spec.name][serializedArgs]) {
+  if (!cosmos.spaces[spec.name][serializedArgs]) {
     const behavior = spec.resolve();
-    const state: InternalState<T> = proxy({
-      value: behavior.value,
-      updatedAt: 0,
+    const space: Space<T> = proxy({
+      state: {
+        value: behavior.value,
+        updatedAt: 0,
+      },
       internal: ref({
         alive: false,
         behavior,
@@ -42,30 +44,35 @@ export function initState<T>(spec: Spec<T>): InternalState<T> {
       }),
     });
 
-    behavior.onLoad?.(state);
+    const meta: Meta = {
+      name: spec.name,
+      args: spec.args,
+    };
+
+    behavior.onLoad?.(space.state, meta);
 
     const onWrite = behavior.onWrite;
     if (onWrite) {
-      const unsubscribe = subscribe(state, () => {
-        onWrite(state);
+      const unsubscribe = subscribe(space, () => {
+        onWrite(space.state, meta);
       });
-      state.internal.onDeleteHandlers.push(unsubscribe);
+      space.internal.onDeleteHandlers.push(unsubscribe);
     }
 
     const onDelete = behavior.onDelete;
     if (onDelete) {
-      state.internal.onDeleteHandlers.push(onDelete);
+      space.internal.onDeleteHandlers.push(() => onDelete(space.state, meta));
     }
 
-    states[spec.name][serializedArgs] = state;
+    spaces[spec.name][serializedArgs] = space;
   }
 
-  return states[spec.name][serializedArgs];
+  return spaces[spec.name][serializedArgs];
 }
 
 export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
-  const state = initState(spec);
-  const { internal } = state;
+  const space = initSpace(spec);
+  const { internal } = space;
   internal.subscribers.add(subscriberId);
 
   if (internal.clearStopTimer) {
@@ -80,7 +87,11 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
   if (!internal.alive) {
     internal.alive = true;
     const { behavior } = internal;
-    const stop = behavior.onStart?.(state);
+    const meta: Meta = {
+      name: spec.name,
+      args: spec.args,
+    };
+    const stop = behavior.onStart?.(space.state, meta);
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;
@@ -90,8 +101,8 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
       if (forgetMs != null) {
         internal.clearForgetTimer = setSmartTimeout(() => {
           const serializedArgs = serializeArgs(spec.args);
-          if (cosmos.states[spec.name]?.[serializedArgs] === state) {
-            delete cosmos.states[spec.name][serializedArgs];
+          if (cosmos.spaces[spec.name]?.[serializedArgs] === space) {
+            delete cosmos.spaces[spec.name][serializedArgs];
           }
         }, forgetMs);
       }
@@ -100,8 +111,8 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
 }
 
 export function removeSubscriber<T>(spec: Spec<T>, subscriberId: number) {
-  const state = initState(spec);
-  const { internal } = state;
+  const space = initSpace(spec);
+  const { internal } = space;
   internal.subscribers.delete(subscriberId);
 
   if (internal.subscribers.size === 0 && internal.alive) {
@@ -112,21 +123,21 @@ export function removeSubscriber<T>(spec: Spec<T>, subscriberId: number) {
 }
 
 export function getPromise<T>(spec: Spec<T>) {
-  const state = initState(spec);
+  const space = initSpace(spec);
 
-  if (!state.internal.promise) {
-    state.internal.promise = new Promise<State<Ready<T>>>((resolve, reject) => {
-      match(state.value, {
-        value: () => resolve(state as State<Ready<T>>),
+  if (!space.internal.promise) {
+    space.internal.promise = new Promise<State<Ready<T>>>((resolve, reject) => {
+      match(space.state.value, {
+        value: () => resolve(space.state as State<Ready<T>>),
         error: (error) => reject(error),
         loading: () => {
           const subscriberId = getNextSubscriberId();
-          const unsubscribe = subscribe(state, () => {
-            match(state.value, {
+          const unsubscribe = subscribe(space.state, () => {
+            match(space.state.value, {
               value: () => {
                 unsubscribe();
                 removeSubscriber(spec, subscriberId);
-                resolve(state as State<Ready<T>>);
+                resolve(space.state as State<Ready<T>>);
               },
               error: (error) => {
                 unsubscribe();
@@ -144,5 +155,5 @@ export function getPromise<T>(spec: Spec<T>) {
     });
   }
 
-  return state.internal.promise;
+  return space.internal.promise;
 }

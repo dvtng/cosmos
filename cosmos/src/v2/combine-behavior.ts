@@ -1,10 +1,10 @@
 import type { Behavior, Trait } from "./core";
 
-export type Traits<T> = ArrayWithAtLeastOneOf<Behavior<T>, Trait<T>>;
+export type Traits<T> = ArrayWithAtLeastOneOf<Behavior<T>, Trait>;
 
-type ArrayWithAtLeastOneOf<TOne, TEvery> =
-  | (Array<TEvery> & { 0: TOne })
-  | [...Array<TEvery>, TOne];
+type ArrayWithAtLeastOneOf<TOne, TOther> =
+  | (Array<TOne | TOther> & { 0: TOne })
+  | [...Array<TOne | TOther>, TOne];
 
 export function combineBehavior<T>(
   behavior: Behavior<T> | Traits<T>
@@ -13,7 +13,7 @@ export function combineBehavior<T>(
     return behavior;
   }
 
-  const value = behavior.find((b) => b.value !== undefined)!.value as T;
+  const value = (behavior.find((b) => "value" in b) as Behavior<T>).value;
   const forget = behavior.find((b) => b.forget !== undefined)?.forget;
 
   return {

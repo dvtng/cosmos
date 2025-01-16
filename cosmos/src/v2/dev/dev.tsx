@@ -7,7 +7,7 @@ import { devState } from "./dev-state";
 export function CosmosDev() {
   const $state = useSnapshot(cosmos);
   const $devState = useSnapshot(devState);
-  const keys = Object.keys($state.states);
+  const keys = Object.keys($state.spaces);
 
   const content = (
     <div

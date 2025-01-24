@@ -8,3 +8,5 @@ export * from "./snapshot";
 export * from "./compute";
 export * from "./request";
 export * from "./persist";
+export { subscribe } from "valtio";
+export { subscribeKey } from "valtio/utils";

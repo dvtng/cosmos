@@ -5,6 +5,7 @@ export * from "./use-model";
 export * from "./set-model";
 export * from "./get-model";
 export * from "./snapshot";
+export * from "./value";
 export * from "./compute";
 export * from "./request";
 export * from "./persist";

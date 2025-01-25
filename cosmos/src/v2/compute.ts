@@ -1,10 +1,9 @@
 import { watch } from "valtio/utils";
 import { type Snapshot, type Spec, type Behavior, type State } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { addSubscriber, removeSubscriber } from "./cosmos";
+import { addSubscriber, initSpace, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { type Later, asError, isLoading, later, match } from "./later";
-import { getModel } from "./get-model";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -16,7 +15,7 @@ export function compute<TValue>(
     value: (() => {
       try {
         return fn((spec) => {
-          const state = getModel(spec);
+          const { state } = initSpace(spec);
           return toSnapshot(spec, state);
         });
       } catch (error) {
@@ -35,7 +34,7 @@ export function compute<TValue>(
         const nextSpecs: Record<string, Spec<any>> = {};
 
         const getSnapshot: GetSnapshot = function (spec) {
-          const state = getModel(spec);
+          const { state } = initSpace(spec);
           addSubscriber(spec, subscriberId);
           nextSpecs[`${spec.name}:${serializeArgs(spec.args)}`] = spec;
 

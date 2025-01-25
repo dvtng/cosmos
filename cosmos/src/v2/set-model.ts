@@ -1,7 +1,7 @@
 import type { Spec, State } from "./core";
-import { getModel } from "./get-model";
+import { initSpace } from "./cosmos";
 
 export function setModel<T>(spec: Spec<T>, setter: (state: State<T>) => void) {
-  const state = getModel(spec);
+  const { state } = initSpace(spec);
   setter(state);
 }

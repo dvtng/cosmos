@@ -1,14 +1,18 @@
 import { useSnapshot } from "valtio";
 import { type Snapshot, type Spec } from "./core";
-import { removeSubscriber, addSubscriber, getPromise } from "./cosmos";
+import {
+  removeSubscriber,
+  addSubscriber,
+  getPromise,
+  initSpace,
+} from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { useLayoutEffect } from "react";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { match } from "./later";
-import { getModel } from "./get-model";
 
 export function useModel<T>(spec: Spec<T>): Snapshot<T> {
-  const $state = useSnapshot(getModel(spec));
+  const $state = useSnapshot(initSpace(spec).state);
 
   useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();

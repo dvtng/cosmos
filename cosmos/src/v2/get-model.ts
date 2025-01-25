@@ -15,13 +15,16 @@ export function getModel<T>(spec: Spec<T>): GetModelResult<T> {
   return {
     ...space.state,
     get then() {
-      return getPromise(spec).then;
+      const promise = getPromise(spec);
+      return promise.then.bind(promise);
     },
     get catch() {
-      return getPromise(spec).catch;
+      const promise = getPromise(spec);
+      return promise.catch.bind(promise);
     },
     get finally() {
-      return getPromise(spec).finally;
+      const promise = getPromise(spec);
+      return promise.finally.bind(promise);
     },
   };
 }

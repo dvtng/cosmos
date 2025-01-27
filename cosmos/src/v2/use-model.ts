@@ -9,7 +9,7 @@ import {
 import { serializeArgs } from "./serialize-args";
 import { useLayoutEffect } from "react";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { match } from "./later";
+import { createMapper } from "./later-map";
 
 export function useModel<T>(spec: Spec<T>): Snapshot<T> {
   const $state = useSnapshot(initSpace(spec).state);
@@ -24,19 +24,22 @@ export function useModel<T>(spec: Spec<T>): Snapshot<T> {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.name, serializeArgs(spec.args)]);
 
-  return {
-    match: (cases) => {
-      const v = $state.value as T;
-      return match(v, cases);
+  const map = createMapper(() => $state.value as T, {
+    value: (value) => {
+      return value;
     },
+    loading: () => {
+      throw getPromise(spec);
+    },
+    error: (error) => {
+      throw error;
+    },
+  });
+
+  return {
+    map,
     get value() {
-      const v = $state.value as T;
-      return match(v, {
-        value: (value) => value,
-        loading: () => {
-          throw getPromise(spec);
-        },
-      });
+      return map({});
     },
   };
 }

@@ -19,7 +19,7 @@ function fetchCoinPrice(coinId: string) {
 export function CoinPriceView({ coinId }: { coinId: string }) {
   const coinPrice = useModel(CoinPrice(coinId));
 
-  return coinPrice.match({
+  return coinPrice.map({
     loading: () => <div>Loading...</div>,
     error: (error) => <div className="text-red-500">{error.message}</div>,
     value: (value) => (

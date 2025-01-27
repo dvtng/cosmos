@@ -1,5 +1,6 @@
 import type { Duration } from "../duration";
-import type { Cases, Ready } from "./later";
+import type { Ready } from "./later";
+import type { Mapper } from "./later-map";
 
 export type State<T> = {
   value: T;
@@ -45,6 +46,6 @@ export type Meta = {
 };
 
 export type Snapshot<T> = {
-  match: <V>(cases: Cases<T, V>) => V;
+  map: Mapper<T, Ready<T>, never, never>;
   value: Ready<T>;
 };

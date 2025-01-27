@@ -3,10 +3,15 @@ import { type Space, type Meta, type Spec, type State } from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "../duration";
-import { match, type Ready } from "./later";
+import { type Ready } from "./later";
+import { createMapper } from "./later-map";
 import { setSmartTimeout } from "../set-smart-timeout";
 
 const KEEP_ALIVE_MS = 1000;
+
+const NOT_IMPLEMENTED = () => {
+  throw new Error("Not implemented");
+};
 
 export type Cosmos = {
   spaces: Record<string, Record<string, Space<any>>>;
@@ -126,14 +131,20 @@ export function getPromise<T>(spec: Spec<T>) {
   const space = initSpace(spec);
 
   if (!space.internal.promise) {
+    const map = createMapper(() => space.state.value, {
+      value: NOT_IMPLEMENTED,
+      loading: NOT_IMPLEMENTED,
+      error: NOT_IMPLEMENTED,
+    });
+
     space.internal.promise = new Promise<State<Ready<T>>>((resolve, reject) => {
-      match(space.state.value, {
+      map({
         value: () => resolve(space.state as State<Ready<T>>),
         error: (error) => reject(error),
         loading: () => {
           const subscriberId = getNextSubscriberId();
           const unsubscribe = subscribe(space.state, () => {
-            match(space.state.value, {
+            map({
               value: () => {
                 unsubscribe();
                 removeSubscriber(spec, subscriberId);

@@ -3,7 +3,8 @@ import { type Snapshot, type Spec, type Behavior, type State } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { addSubscriber, initSpace, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
-import { type Later, asError, isLoading, later, match } from "./later";
+import { type Later, asError, isLoading, loading } from "./later";
+import { createMapper } from "./later-map";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -75,17 +76,21 @@ export function compute<TValue>(
 
 function toSnapshot<T>(spec: Spec<T>, state: State<T>): Snapshot<T> {
   const v = state.value;
-  return {
-    match: (cases) => {
-      return match(v, cases);
+  const map = createMapper(() => v, {
+    value: (value) => {
+      return value;
     },
+    loading: () => {
+      throw loading();
+    },
+    error: (error) => {
+      throw error;
+    },
+  });
+  return {
+    map,
     get value() {
-      return match(v, {
-        value: (value) => value,
-        loading: () => {
-          throw later();
-        },
-      });
+      return map({});
     },
   };
 }

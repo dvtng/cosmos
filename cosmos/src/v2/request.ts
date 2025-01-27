@@ -1,5 +1,5 @@
 import { type Duration } from "../duration";
-import { asError, later, type Later } from "./later";
+import { asError, loading, type Later } from "./later";
 import type { Behavior } from "./core";
 import { Timer } from "./timer";
 import { addWindowListener } from "./dom";
@@ -14,7 +14,7 @@ export function request<T>(
   options: RequestOptions = {}
 ): Behavior<Later<T>> {
   return {
-    value: later<T>(),
+    value: loading<T>(),
     onStart: (state) => {
       let alive = true;
 

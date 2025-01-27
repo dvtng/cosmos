@@ -1,7 +1,7 @@
 import type { Meta, State, Trait } from "./core";
 import { serializeArgs } from "./serialize-args";
 
-export function persist(key: string): Trait {
+export function persist<T>(key: string): Trait<T> {
   function getStorageKey(meta: Meta) {
     return `cosmos:${key}:${serializeArgs(meta.args)}`;
   }

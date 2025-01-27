@@ -38,7 +38,7 @@ export type Behavior<T> = {
   onDelete?: (state: State<T>, meta: Meta) => void;
 };
 
-export type Trait = Omit<Behavior<unknown>, "value">;
+export type Trait<T> = Omit<Behavior<T>, "value">;
 
 export type Meta = {
   name: string;

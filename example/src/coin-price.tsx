@@ -5,6 +5,11 @@ export const CoinPrice = model("CoinPrice", (coinId: string) => {
   return [
     request(() => fetchCoinPrice(coinId), { refresh: { seconds: 10 } }),
     persist("CoinPrice"),
+    {
+      onWrite(state) {
+        console.log(`CoinPrice updated`, state);
+      },
+    },
   ];
 });
 

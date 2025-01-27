@@ -1,6 +1,6 @@
 import type { Behavior, Trait } from "./core";
 
-export type Traits<T> = ArrayWithAtLeastOneOf<Behavior<T>, Trait>;
+export type Traits<T> = ArrayWithAtLeastOneOf<Behavior<T>, Trait<T>>;
 
 type ArrayWithAtLeastOneOf<TOne, TOther> =
   | (Array<TOne | TOther> & { 0: TOne })

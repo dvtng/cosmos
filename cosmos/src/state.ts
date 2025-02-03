@@ -18,17 +18,17 @@ export function getNextSubscriberId() {
 
 export function getAtom<Q extends Query<any, any>>(query: Q) {
   if (!state.atoms[query.model.type]) {
-    state.atoms[query.model.type] = {};
+    state.atoms[query.model.type] = proxy({});
   }
 
   const namespace = state.atoms[query.model.type];
 
   if (!namespace[query.$key]) {
-    namespace[query.$key] = {
+    namespace[query.$key] = proxy({
       value: undefined,
       initialized: false,
       subscribers: ref(new Set<number>()),
-    };
+    });
   }
 
   return namespace[query.$key] as Atom<QueryType<Q>>;

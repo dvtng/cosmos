@@ -58,7 +58,7 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
 
     const onWrite = behavior.onWrite;
     if (onWrite) {
-      const unsubscribe = subscribe(space, () => {
+      const unsubscribe = subscribe(space.state, () => {
         onWrite(space.state, meta);
       });
       space.internal.onDeleteHandlers.push(unsubscribe);

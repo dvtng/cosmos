@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "safe-stable-stringify": "^2.4.3",
-    "valtio": "^1.13.2"
+    "valtio": "^2.0.0"
   }
 }

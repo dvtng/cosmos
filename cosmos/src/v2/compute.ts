@@ -1,10 +1,10 @@
-import { watch } from "valtio/utils";
 import { type Snapshot, type Spec, type Behavior, type State } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { addSubscriber, initSpace, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { type Later, asError, isLoading, loading } from "./later";
 import { createMapper } from "./later-map";
+import { subscribe } from "valtio";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -27,22 +27,26 @@ export function compute<TValue>(
         }
       }
     })(),
-    onStart(state) {
+    onStart(state, meta) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
+      const unsubscribes: Record<string, () => void> = {};
 
-      const unwatch = watch((track) => {
+      function run() {
         const nextSpecs: Record<string, Spec<any>> = {};
 
         const getSnapshot: GetSnapshot = function (spec) {
-          const { state } = initSpace(spec);
+          const space = initSpace(spec);
           addSubscriber(spec, subscriberId);
-          nextSpecs[`${spec.name}:${serializeArgs(spec.args)}`] = spec;
+          const key = `${spec.name}:${serializeArgs(spec.args)}`;
+          nextSpecs[key] = spec;
 
-          // Tell valtio to track the dependency
-          track(state);
+          if (!unsubscribes[key]) {
+            const unsubscribe = subscribe(space.state, run);
+            unsubscribes[key] = unsubscribe;
+          }
 
-          return toSnapshot(spec, state);
+          return toSnapshot(spec, space.state);
         };
 
         try {
@@ -59,15 +63,22 @@ export function compute<TValue>(
         for (const key in specs) {
           if (!nextSpecs[key]) {
             removeSubscriber(specs[key], subscriberId);
+            unsubscribes[key]();
+            delete unsubscribes[key];
           }
         }
+
         specs = nextSpecs;
-      });
+      }
+
+      run();
 
       return function stop() {
-        unwatch();
         for (const key in specs) {
           removeSubscriber(specs[key], subscriberId);
+        }
+        for (const key in unsubscribes) {
+          unsubscribes[key]();
         }
       };
     },

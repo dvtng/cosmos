@@ -1,4 +1,4 @@
-import { model, useModel } from "@dvtng/cosmos/src/v2";
+import { model, useModel } from "@dvtng/cosmos";
 import NumberFlow from "@number-flow/react";
 
 export const Counter = model(

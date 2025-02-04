@@ -1,4 +1,4 @@
-import { model, useModel } from "@dvtng/cosmos/src/v2";
+import { model, useModel } from "@dvtng/cosmos";
 
 export const Time = model("Time", () => {
   return [

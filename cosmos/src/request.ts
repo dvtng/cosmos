@@ -1,4 +1,4 @@
-import { type Duration } from "../duration";
+import { type Duration } from "./duration";
 import { asError, loading, type Later } from "./later";
 import type { Behavior } from "./core";
 import { Timer } from "./timer";

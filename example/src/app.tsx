@@ -4,7 +4,7 @@ import { CounterOnFocusView } from "./counter-on-focus";
 import { Counters } from "./counters";
 import { CoinPriceView } from "./coin-price";
 import { ErrorBoundary } from "./error-boundary";
-import { CosmosDev } from "@dvtng/cosmos/src/v2/dev";
+import { CosmosDev } from "@dvtng/cosmos/dist/dev";
 
 export function App() {
   return (

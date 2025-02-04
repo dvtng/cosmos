@@ -1,4 +1,4 @@
-import { compute, getModel, model, useModel } from "@dvtng/cosmos/src/v2";
+import { compute, getModel, model, useModel } from "@dvtng/cosmos";
 import { AppState } from "./app-state";
 import { Counter } from "./counter";
 import { CounterView } from "./counter";

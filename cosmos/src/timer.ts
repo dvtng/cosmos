@@ -1,5 +1,5 @@
-import { toMs, type Duration } from "../duration";
-import { setSmartTimeout } from "../set-smart-timeout";
+import { toMs, type Duration } from "./duration";
+import { setSmartTimeout } from "./set-smart-timeout";
 
 type ScheduledEvent = {
   time: number;

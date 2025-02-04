@@ -1,4 +1,4 @@
-import { model, request, useModel } from "@dvtng/cosmos/src/v2";
+import { model, request, useModel } from "@dvtng/cosmos";
 import NumberFlow from "@number-flow/react";
 
 let count = 0;

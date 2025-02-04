@@ -1,34 +1,45 @@
-import { useLayoutEffect } from "react";
-import {
-  getNextSubscriberId,
-  getAtom,
-  subscribe,
-  unsubscribe,
-  initialize,
-} from "./state";
 import { useSnapshot } from "valtio";
-import type { Atom, Query, QueryType, UseModel } from "./core-types";
+import { type Snapshot, type Spec } from "./core";
+import {
+  removeSubscriber,
+  addSubscriber,
+  getPromise,
+  initSpace,
+} from "./cosmos";
+import { serializeArgs } from "./serialize-args";
+import { useLayoutEffect } from "react";
+import { getNextSubscriberId } from "./get-next-subscriber-id";
+import { createMapper } from "./later-map";
 
-export const useModel: UseModel = function <Q extends Query>(query: Q) {
-  const atom = getAtom(query);
-
-  // Initialize in the render phase to ensure sync models (e.g. derived models
-  // with already cached data) are ready on first render.
-  initialize(query);
+export function useModel<T>(spec: Spec<T>): Snapshot<T> {
+  const $state = useSnapshot(initSpace(spec).state);
 
   useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();
-    subscribe(query, subscriberId);
+    addSubscriber(spec, subscriberId);
 
     return () => {
-      unsubscribe(query, subscriberId);
+      removeSubscriber(spec, subscriberId);
     };
-    // Since query.$key is a seralized representation of the query,
-    // we only need this as the dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query?.$key]);
+  }, [spec.name, serializeArgs(spec.args)]);
 
-  const _atom = useSnapshot(atom) as Atom<QueryType<Q>>;
+  const map = createMapper(() => $state.value as T, {
+    value: (value) => {
+      return value;
+    },
+    loading: () => {
+      throw getPromise(spec);
+    },
+    error: (error) => {
+      throw error;
+    },
+  });
 
-  return [_atom.value, atom, query];
-};
+  return {
+    map,
+    get value() {
+      return map({});
+    },
+  };
+}

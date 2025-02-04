@@ -1,4 +1,4 @@
-import type { Duration } from "../duration";
+import type { Duration } from "./duration";
 import type { Ready } from "./later";
 import type { Mapper } from "./later-map";
 

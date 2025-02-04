@@ -1,4 +1,4 @@
-import { model, persist, value } from "@dvtng/cosmos/src/v2";
+import { model, persist, value } from "@dvtng/cosmos";
 
 export const AppState = model("AppState", () => {
   return [

@@ -2,10 +2,10 @@ import { proxy, subscribe, ref } from "valtio";
 import { type Space, type Meta, type Spec, type State } from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { toMs } from "../duration";
+import { toMs } from "./duration";
 import { type Ready } from "./later";
 import { createMapper } from "./later-map";
-import { setSmartTimeout } from "../set-smart-timeout";
+import { setSmartTimeout } from "./set-smart-timeout";
 
 const KEEP_ALIVE_MS = 1000;
 

@@ -13,7 +13,7 @@ type Loading = { __type: "LOADING" };
 const LOADING: Loading = ref({ __type: "LOADING" });
 
 export function isLoading(value: unknown): value is Loading {
-  return value === LOADING;
+  return value != null && (value as { __type: string }).__type === "LOADING";
 }
 
 export function isError(value: unknown): value is Error {

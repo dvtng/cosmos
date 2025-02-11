@@ -1,5 +1,5 @@
 import { type Duration } from "./duration";
-import { asError, loading, type Later } from "./later";
+import { asError, isError, isLoading, loading, type Later } from "./later";
 import type { Behavior } from "./core";
 import { Timer } from "./timer";
 import { addWindowListener } from "./dom";
@@ -29,7 +29,9 @@ export function request<T>(
           }
         } catch (error) {
           if (alive) {
-            state.value = asError(error);
+            if (isLoading(state.value) || isError(state.value)) {
+              state.value = asError(error);
+            }
             state.updatedAt = Date.now();
           }
         }

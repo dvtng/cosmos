@@ -25,5 +25,5 @@
     "declaration": true,
     "outDir": "./dist"
   },
-  "exclude": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
+  "exclude": ["./dist", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
 }

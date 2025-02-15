@@ -4,7 +4,7 @@ import { delay } from "./util/delay";
 
 const Echo = model((value: string) => {
   return request(async () => {
-    await delay(100);
+    await delay(0);
     return value;
   });
 });

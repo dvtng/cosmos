@@ -27,7 +27,7 @@ export function compute<TValue>(
         }
       }
     })(),
-    onStart(state, meta) {
+    onStart(state) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
       const unsubscribes: Record<string, () => void> = {};

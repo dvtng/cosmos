@@ -9,7 +9,24 @@ import { subscribe } from "valtio";
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
 export function compute<TValue>(
-  fn: (get: GetSnapshot) => Later<TValue>
+  fn: (get: GetSnapshot) => Later<TValue>,
+  options: {
+    defaultValue: TValue;
+  }
+): Behavior<TValue>;
+
+export function compute<TValue>(
+  fn: (get: GetSnapshot) => Later<TValue>,
+  options?: {
+    defaultValue?: TValue;
+  }
+): Behavior<Later<TValue>>;
+
+export function compute<TValue>(
+  fn: (get: GetSnapshot) => Later<TValue>,
+  options?: {
+    defaultValue?: TValue;
+  }
 ): Behavior<Later<TValue>> {
   return {
     forget: true,
@@ -20,7 +37,9 @@ export function compute<TValue>(
           return toSnapshot(spec, state);
         });
       } catch (error) {
-        if (isLoading(error)) {
+        if (options?.defaultValue !== undefined) {
+          return options.defaultValue;
+        } else if (isLoading(error)) {
           return error;
         } else {
           return asError(error);
@@ -52,7 +71,9 @@ export function compute<TValue>(
         try {
           state.value = fn(getSnapshot);
         } catch (error) {
-          if (isLoading(error)) {
+          if (options?.defaultValue !== undefined) {
+            state.value = options.defaultValue;
+          } else if (isLoading(error)) {
             state.value = error;
           } else {
             state.value = asError(error);

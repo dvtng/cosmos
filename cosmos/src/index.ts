@@ -9,3 +9,4 @@ export * from "./value";
 export * from "./compute";
 export * from "./request";
 export * from "./persist";
+export { ref } from "valtio";

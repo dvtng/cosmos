@@ -2,7 +2,41 @@ import type { Meta, State, Trait } from "./core";
 import { isError } from "./later";
 import { serializeArgs } from "./serialize-args";
 
-export function persist<T>(key: string): Trait<T> {
+export interface PersistOptions<T> {
+  /**
+   * Custom function to serialize state before storing
+   * @default JSON.stringify
+   */
+  serialize?: (state: State<T>) => string;
+
+  /**
+   * Custom function to parse serialized state
+   * @default JSON.parse
+   */
+  parse?: (serialized: string) => State<T>;
+
+  /**
+   * Storage to use for persistence
+   * @default localStorage
+   */
+  storage?: Storage;
+}
+
+export function persist<T>(key: string, options?: PersistOptions<T>): Trait<T> {
+  const storage = options?.storage || localStorage;
+
+  // Default serialization function
+  const serialize =
+    options?.serialize || ((state: State<T>) => JSON.stringify({ state }));
+
+  // Default parse function
+  const parse =
+    options?.parse ||
+    ((serialized: string) => {
+      const parsed = JSON.parse(serialized);
+      return parsed.state;
+    });
+
   function getStorageKey(meta: Meta) {
     return `cosmos:${key}:${serializeArgs(meta.args)}`;
   }
@@ -10,12 +44,12 @@ export function persist<T>(key: string): Trait<T> {
   return {
     onLoad: (state, meta) => {
       const storageKey = getStorageKey(meta);
-      const serialized = localStorage.getItem(storageKey);
+      const serialized = storage.getItem(storageKey);
       if (serialized) {
         try {
-          const parsed = JSON.parse(serialized);
-          state.value = parsed.state.value;
-          state.updatedAt = parsed.state.updatedAt;
+          const parsedState = parse(serialized);
+          state.value = parsedState.value;
+          state.updatedAt = parsedState.updatedAt;
         } catch (error) {
           console.error(`Failed to parse persisted state for ${storageKey}`);
           console.error(error);
@@ -23,7 +57,7 @@ export function persist<T>(key: string): Trait<T> {
       }
     },
 
-    onWrite: (state: State<unknown>, meta: Meta) => {
+    onWrite: (state: State<T>, meta: Meta) => {
       // Don't persist errors
       if (isError(state.value)) {
         return;
@@ -31,7 +65,7 @@ export function persist<T>(key: string): Trait<T> {
 
       const storageKey = getStorageKey(meta);
       try {
-        localStorage.setItem(storageKey, JSON.stringify({ state }));
+        storage.setItem(storageKey, serialize(state as State<T>));
       } catch (error) {
         console.error(`Failed to persist state for ${storageKey}`);
         console.error(error);
@@ -41,7 +75,7 @@ export function persist<T>(key: string): Trait<T> {
     onDelete: (_state, meta) => {
       const storageKey = getStorageKey(meta);
       try {
-        localStorage.removeItem(storageKey);
+        storage.removeItem(storageKey);
       } catch (error) {
         console.error(`Failed to delete persisted state for ${storageKey}`);
         console.error(error);

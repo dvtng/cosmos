@@ -29,6 +29,14 @@ export function model<A extends any[], V>(
   };
 }
 
+export type ModelArgs<T extends Model<any, any>> = T extends Model<infer A, any>
+  ? A
+  : never;
+
+export type ModelValue<T extends Model<any, any>> = T extends Model<any, infer V>
+  ? V
+  : never;
+
 type Identity<A extends any[]> = {
   name: string;
   args: (...args: A) => unknown[];

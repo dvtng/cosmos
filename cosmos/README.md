@@ -1,82 +1,95 @@
 # cosmos
 
-Proof of concept for a flexible data-fetching framework for React.
+A flexible data-fetching and state management framework for React applications.
 
-## Core concepts
+## Core Concepts
 
-Data sources are described using models:
+### Models
+
+Models are the fundamental building blocks of cosmos. They represent data sources and their behaviors:
 
 ```ts
 const Weather = model({
-  type: "Weather",
-  refresh: { minutes: 5 },
-  get({ latitude, longitude }) {
-    return fetch(`https://weather.example.com/${latitude}/${latitude}`).then(
+  name: "Weather",
+  args: (latitude: number, longitude: number) => [latitude, longitude],
+  resolve: (latitude: number, longitude: number) => ({
+    value: fetch(`https://weather.example.com/${latitude}/${longitude}`).then(
       (resp) => resp.json()
-    );
-  },
+    ),
+    // Optional behaviors
+    forget: { minutes: 5 }, // Cache duration
+    onLoad: (state, meta) => {
+      console.log(`Weather loaded for ${meta.name}`);
+    },
+    onStart: (state, meta) => {
+      // Setup code
+      return () => {
+        // Cleanup code
+      };
+    },
+  }),
 });
 ```
 
-Models can then be queried inside components:
+### Using Models in Components
+
+Models can be used in React components using the `useModel` hook:
 
 ```tsx
 function WeatherIcon({ latitude, longitude }) {
-  const [weather] = useModel(Weather({ latitude, longitude }));
+  const { value: weather } = useModel(Weather(latitude, longitude));
 
-  return <img src={weather ? weather.iconUrl : placeholderIconUrl} />;
+  if (weather.loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (weather.error) {
+    return <ErrorDisplay error={weather.error} />;
+  }
+
+  return <img src={weather.value.iconUrl} />;
 }
 ```
 
-We can use suspense if preferred using `waitFor`:
+### Derived Models
 
-```tsx
-function WeatherIcon({ latitude, longitude }) {
-  const [weather] = waitFor(useModel(Weather({ latitude, longitude })));
-
-  return <img src={weather.iconUrl} />;
-}
-```
-
-Models can also represent data sources that continuously emit data, such as
-websockets or event listeners:
+Models can be composed to create derived models that automatically update when their dependencies change:
 
 ```ts
 const MyLocation = model({
-  type: "MyLocation",
-  emitter(emit) {
-    const id = navigator.geolocation.watchPosition((position) => {
-      emit(position.coords);
-    });
-    // Stop watching when this model is no longer used
-    return () => {
-      clearWatch(id);
-    };
-  },
+  name: "MyLocation",
+  args: () => [],
+  resolve: () => ({
+    value: new Promise((resolve) => {
+      const id = navigator.geolocation.watchPosition((position) => {
+        resolve(position.coords);
+      });
+      return () => navigator.geolocation.clearWatch(id);
+    }),
+  }),
 });
-```
 
-If we frequently need to get the weather at the current location, we can combine
-these two models into one:
-
-```ts
 const MyWeather = model({
-  type: "MyWeather",
-  derive(getModel) {
-    const [coords] = waitFor(getModel(MyLocation()));
-    return getModel(Weather(coords));
+  name: "MyWeather",
+  args: () => [],
+  resolve: async () => {
+    const location = await MyLocation();
+    return Weather(location.latitude, location.longitude);
   },
 });
-
-function MyWeatherIcon() {
-  const [myWeather] = waitFor(useModel(MyWeather()));
-
-  return <img src={myWeather.iconUrl} />;
-}
 ```
 
-Cosmos automatically tracks the dependencies of MyWeather so that it updates
-whenever either MyLocation or Weather updates.
+### Features
 
-It also tracks usages of each model so that they are initialized once when used
-by a component, and then cleaned up when no longer needed.
+- **Automatic Dependency Tracking**: Models automatically track their dependencies and update when dependencies change
+- **Resource Management**: Models are initialized when used and cleaned up when no longer needed
+- **Caching**: Built-in support for caching with configurable durations
+- **Lifecycle Hooks**: `onLoad`, `onStart`, `onWrite`, and `onDelete` hooks for fine-grained control
+- **Type Safety**: Full TypeScript support
+- **Suspense Support**: Compatible with React Suspense for loading states
+
+## Installation
+
+```bash
+npm install @dvtng/cosmos
+```

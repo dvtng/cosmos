@@ -1,4 +1,3 @@
-import React from "react";
 import { test, expect } from "bun:test";
 import { model, useModel } from "..";
 import { setSmartTimeout } from "../set-smart-timeout";

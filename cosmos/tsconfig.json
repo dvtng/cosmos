@@ -23,8 +23,9 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "declaration": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "noEmit": true
   },
   "include": ["./src/**/*"],
-  "exclude": ["./dist", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
+  "exclude": ["./dist", "./src/dev/**"]
 }

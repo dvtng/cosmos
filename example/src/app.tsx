@@ -22,7 +22,7 @@ export function App() {
           </div>
           <div className="panel">
             <h2>BTC price</h2>
-            <CoinPriceView coinId="btc-bitcoin" />
+            {/* <CoinPriceView coinId="btc-bitcoin" /> */}
           </div>
         </Suspense>
       </ErrorBoundary>

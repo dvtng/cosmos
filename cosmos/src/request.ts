@@ -15,7 +15,7 @@ export function request<T>(
 ): Behavior<Later<T>> {
   return {
     value: loading<T>(),
-    onStart: (state) => {
+    onStart: (state, setState) => {
       let alive = true;
 
       const timer = new Timer();
@@ -24,15 +24,19 @@ export function request<T>(
         try {
           const value = await fn();
           if (alive) {
-            state.value = value;
-            state.updatedAt = Date.now();
+            setState((draft) => {
+              draft.value = value;
+              draft.updatedAt = Date.now();
+            });
           }
         } catch (error) {
           if (alive) {
-            if (isLoading(state.value) || isError(state.value)) {
-              state.value = asError(error);
-            }
-            state.updatedAt = Date.now();
+            setState((draft) => {
+              if (isLoading(draft.value) || isError(draft.value)) {
+                draft.value = asError(error);
+              }
+              draft.updatedAt = Date.now();
+            });
           }
         }
       }

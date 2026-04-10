@@ -1,18 +1,23 @@
-import { useSnapshot } from "valtio";
+import { useSyncExternalStore, useLayoutEffect } from "react";
 import { type Snapshot, type Spec } from "./core";
 import {
   removeSubscriber,
   addSubscriber,
   getPromise,
   initSpace,
+  subscribeToSpace,
 } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
-import { useLayoutEffect } from "react";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { createMapper } from "./later-map";
 
 export function useModel<T>(spec: Spec<T>): Snapshot<T> {
-  const $state = useSnapshot(initSpace(spec).state);
+  const space = initSpace(spec);
+
+  const state = useSyncExternalStore(
+    (onStoreChange) => subscribeToSpace(space, onStoreChange),
+    () => space.state,
+  );
 
   useLayoutEffect(() => {
     const subscriberId = getNextSubscriberId();
@@ -24,7 +29,7 @@ export function useModel<T>(spec: Spec<T>): Snapshot<T> {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.name, serializeArgs(spec.args)]);
 
-  const map = createMapper(() => $state.value as T, {
+  const map = createMapper(() => state.value as T, {
     value: (value) => {
       return value;
     },

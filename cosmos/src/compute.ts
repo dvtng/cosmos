@@ -1,10 +1,9 @@
 import { type Snapshot, type Spec, type Behavior, type State } from "./core";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { addSubscriber, initSpace, removeSubscriber } from "./cosmos";
+import { addSubscriber, initSpace, removeSubscriber, subscribeToSpace } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 import { type Later, asError, isLoading, loading } from "./later";
 import { createMapper } from "./later-map";
-import { subscribe } from "valtio";
 
 export type GetSnapshot = <T>(spec: Spec<T>) => Snapshot<T>;
 
@@ -46,7 +45,7 @@ export function compute<TValue>(
         }
       }
     })(),
-    onStart(state) {
+    onStart(_state, setState) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
       const unsubscribes: Record<string, () => void> = {};
@@ -61,26 +60,30 @@ export function compute<TValue>(
           nextSpecs[key] = spec;
 
           if (!unsubscribes[key]) {
-            const unsubscribe = subscribe(space.state, run);
+            const unsubscribe = subscribeToSpace(space, run);
             unsubscribes[key] = unsubscribe;
           }
 
           return toSnapshot(spec, space.state);
         };
 
+        let newValue: Later<TValue>;
         try {
-          state.value = fn(getSnapshot);
+          newValue = fn(getSnapshot);
         } catch (error) {
           if (options?.defaultValue !== undefined) {
-            state.value = options.defaultValue;
+            newValue = options.defaultValue;
           } else if (isLoading(error)) {
-            state.value = error;
+            newValue = error;
           } else {
-            state.value = asError(error);
+            newValue = asError(error) as Later<TValue>;
           }
         }
 
-        // Unsubscribe from old queries
+        setState((draft) => {
+          draft.value = newValue as any;
+        });
+
         for (const key in specs) {
           if (!nextSpecs[key]) {
             removeSubscriber(specs[key], subscriberId);

@@ -7,15 +7,17 @@ export const Counter = model(
     return {
       value: 0,
       forget: true,
-      onStart: (state) => {
+      onStart: (_state, setState) => {
         const interval = setInterval(() => {
-          state.value++;
+          setState((draft) => {
+            draft.value++;
+          });
         }, 1000);
 
         return () => clearInterval(interval);
       },
     };
-  }
+  },
 );
 
 export function CounterView({ id }: { id: number }) {

@@ -20,9 +20,11 @@ import { model } from "@dvtng/cosmos";
 // A simple model with no arguments
 const Time = model("Time", () => ({
   value: new Date(),
-  onStart(state) {
+  onStart(_state, setState) {
     const interval = setInterval(() => {
-      state.value = new Date();
+      setState((draft) => {
+        draft.value = new Date();
+      });
     }, 1000);
     return () => clearInterval(interval);
   },
@@ -34,9 +36,11 @@ const Counter = model(
   () => ({
     value: 0,
     forget: true,
-    onStart(state) {
+    onStart(_state, setState) {
       const interval = setInterval(() => {
-        state.value++;
+        setState((draft) => {
+          draft.value++;
+        });
       }, 1000);
       return () => clearInterval(interval);
     },
@@ -51,15 +55,20 @@ Models are **lazy** — their state is only created when first accessed (via `us
 A model's resolve function returns a **behavior** — an object describing the model's initial value and lifecycle hooks:
 
 ```ts
+type State<T> = { value: T; updatedAt: number };
+type SetState<T> = (recipe: (draft: State<T>) => void) => void;
+
 type Behavior<T> = {
   value: T;                // Initial value (required)
   forget?: Duration | true;  // How long to retain state after all subscribers leave
-  onLoad?: (state, meta) => void;          // Called once when state is first created
-  onStart?: (state, meta) => (() => void) | void;  // Called when first subscriber arrives
+  onLoad?: (state, setState, meta) => void;          // Called once when state is first created
+  onStart?: (state, setState, meta) => (() => void) | void;  // Called when first subscriber arrives
   onWrite?: (state, meta) => void;         // Called on every state change
   onDelete?: (state, meta) => void;        // Called when state is deleted
 };
 ```
+
+`setState` applies an [Immer](https://immerjs.github.io/immer/) recipe to the model's `State<T>` (`value` and `updatedAt`), then notifies subscribers — the same mechanism as `setModel`.
 
 A **trait** is a behavior without a `value` — it adds lifecycle hooks without defining the initial value. Traits are used by helpers like `persist()`.
 
@@ -92,7 +101,7 @@ coinPrice.map({
 ### Lifecycle
 
 1. **Creation** — When a model is first accessed, `resolve()` runs to produce the behavior. The state is initialized with `behavior.value`. `onLoad` is called.
-2. **Start** — When the first subscriber arrives, `onStart` is called. It may return a cleanup function.
+2. **Start** — When the first subscriber arrives, `onStart` is called with `setState` for Immer-style updates. It may return a cleanup function.
 3. **Active** — While there are subscribers, the model is alive. `onWrite` fires on every state mutation.
 4. **Stop** — When the last subscriber leaves, after a 1-second keep-alive delay, the cleanup from `onStart` runs.
 5. **Forget** — If `forget` is set, after the stop cleanup runs, the state is deleted after the specified duration. `onDelete` is called.
@@ -162,11 +171,12 @@ Accesses a model's state outside of React. Returns the state object with `.value
 function getModel<T>(spec: Spec<T>): GetModelResult<T>;
 ```
 
-Useful in event handlers or other imperative code:
+Useful when you need the current state or async resolution outside React. To update state from event handlers or other imperative code, use `setModel`:
 
 ```ts
-const appState = getModel(AppState());
-appState.value.counters.push(appState.value.nextCounterId++);
+setModel(AppState(), (draft) => {
+  draft.value.counters.push(draft.value.nextCounterId++);
+});
 ```
 
 For async models, you can await the result:
@@ -177,17 +187,17 @@ const { value } = await getModel(CoinPrice("btc-bitcoin"));
 
 ---
 
-### `setModel(spec, setter)`
+### `setModel(spec, recipe)`
 
-Sets a model's state from outside React.
+Sets a model's state from outside React using an Immer recipe (same shape as `setState` in `onStart` / `onLoad`).
 
 ```ts
-function setModel<T>(spec: Spec<T>, setter: (state: State<T>) => void): void;
+function setModel<T>(spec: Spec<T>, recipe: (draft: State<T>) => void): void;
 ```
 
 ```ts
-setModel(Counter(1), (state) => {
-  state.value = 42;
+setModel(Counter(1), (draft) => {
+  draft.value = 42;
 });
 ```
 

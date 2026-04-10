@@ -1,13 +1,74 @@
-import { useSnapshot } from "valtio";
+import {
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { cosmos } from "../cosmos";
 import { ModelView } from "./model-view";
-import { createPortal } from "react-dom";
-import { devState } from "./dev-state";
+import { useDevState } from "./dev-state";
+
+/** Mirrors `react-dom`'s `createPortal` so this file does not depend on `react-dom` types. */
+type CreatePortal = (
+  children: ReactNode,
+  container: Element | DocumentFragment,
+  key?: string | null,
+) => ReactNode;
+
+function useOptionalCreatePortal(): CreatePortal | null {
+  const [createPortal, setCreatePortal] = useState<
+    CreatePortal | null | undefined
+  >(undefined);
+
+  useLayoutEffect(() => {
+    let cancelled = false;
+    import("react-dom")
+      .then((m) => {
+        // Must wrap: passing a function to setState is interpreted as an updater,
+        // not as storing that function as state (would call createPortal(prevState, …)).
+        if (!cancelled) setCreatePortal(() => m.createPortal);
+      })
+      .catch(() => {
+        if (!cancelled) setCreatePortal(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!createPortal) {
+    return null;
+  }
+  return createPortal;
+}
+
+/** Stable empty snapshot for `getServerSnapshot` and empty client state. */
+const EMPTY_KEYS: string[] = [];
+
+let cachedCosmosKeysFingerprint = "";
+let cachedCosmosKeys: string[] = EMPTY_KEYS;
+
+function getCosmosModelKeysSnapshot(): string[] {
+  const keys = Object.keys(cosmos.spaces);
+  const fingerprint = keys.slice().sort().join("\0");
+  if (fingerprint !== cachedCosmosKeysFingerprint) {
+    cachedCosmosKeysFingerprint = fingerprint;
+    cachedCosmosKeys = keys.length === 0 ? EMPTY_KEYS : keys;
+  }
+  return cachedCosmosKeys;
+}
+
+function useCosmosKeys() {
+  return useSyncExternalStore(
+    () => () => {},
+    getCosmosModelKeysSnapshot,
+    () => EMPTY_KEYS,
+  );
+}
 
 export function CosmosDev() {
-  const $state = useSnapshot(cosmos);
-  const $devState = useSnapshot(devState);
-  const keys = Object.keys($state.spaces);
+  const keys = useCosmosKeys();
+  const { isOpen, toggle, close } = useDevState();
 
   const content = (
     <div
@@ -30,12 +91,12 @@ export function CosmosDev() {
           cursor: "pointer",
           padding: 10,
         }}
-        onClick={() => (devState.isOpen = !devState.isOpen)}
+        onClick={toggle}
       >
         Cosmos
       </button>
 
-      {$devState.isOpen && (
+      {isOpen && (
         <div
           style={{
             background: "black",
@@ -50,7 +111,7 @@ export function CosmosDev() {
           }}
         >
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => (devState.isOpen = false)}>Close</button>
+            <button onClick={close}>Close</button>
           </div>
           {keys.map((key) => (
             <ModelView key={key} modelKey={key} />
@@ -60,5 +121,9 @@ export function CosmosDev() {
     </div>
   );
 
+  const createPortal = useOptionalCreatePortal();
+  if (!createPortal) {
+    return content;
+  }
   return createPortal(content, document.body);
 }

@@ -1,4 +1,4 @@
-import { compute, getModel, model, useModel } from "@dvtng/cosmos";
+import { compute, model, setModel, useModel } from "@dvtng/cosmos";
 import { AppState } from "./app-state";
 import { Counter } from "./counter";
 import { CounterView } from "./counter";
@@ -29,8 +29,9 @@ export function Counters() {
         <button
           className="btn"
           onClick={() => {
-            const appState = getModel(AppState());
-            appState.value.counters.push(appState.value.nextCounterId++);
+            setModel(AppState(), (draft) => {
+              draft.value.counters.push(draft.value.nextCounterId++);
+            });
           }}
         >
           Add Counter
@@ -65,10 +66,11 @@ function CountersTable() {
             <button
               className="link"
               onClick={() => {
-                const appState = getModel(AppState());
-                appState.value.counters = appState.value.counters.filter(
-                  (_id) => _id !== id
-                );
+                setModel(AppState(), (draft) => {
+                  draft.value.counters = draft.value.counters.filter(
+                    (_id) => _id !== id,
+                  );
+                });
               }}
             >
               Remove

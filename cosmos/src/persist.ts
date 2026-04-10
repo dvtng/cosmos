@@ -42,14 +42,16 @@ export function persist<T>(key: string, options?: PersistOptions<T>): Trait<T> {
   }
 
   return {
-    onLoad: (state, meta) => {
+    onLoad: (_state, setState, meta) => {
       const storageKey = getStorageKey(meta);
       const serialized = storage.getItem(storageKey);
       if (serialized) {
         try {
           const parsedState = parse(serialized);
-          state.value = parsedState.value;
-          state.updatedAt = parsedState.updatedAt;
+          setState((draft) => {
+            draft.value = parsedState.value;
+            draft.updatedAt = parsedState.updatedAt;
+          });
         } catch (error) {
           console.error(`Failed to parse persisted state for ${storageKey}`);
           console.error(error);

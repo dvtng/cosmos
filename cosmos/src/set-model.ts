@@ -1,7 +1,9 @@
+import { produce } from "immer";
 import type { Spec, State } from "./core";
-import { initSpace } from "./cosmos";
+import { initSpace, notifyListeners } from "./cosmos";
 
-export function setModel<T>(spec: Spec<T>, setter: (state: State<T>) => void) {
-  const { state } = initSpace(spec);
-  setter(state);
+export function setModel<T>(spec: Spec<T>, recipe: (draft: State<T>) => void) {
+  const space = initSpace(spec);
+  space.state = produce(space.state, recipe);
+  notifyListeners(space);
 }

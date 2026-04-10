@@ -1,10 +1,8 @@
-import { useSnapshot } from "valtio";
 import { cosmos } from "../cosmos";
 import { QueryView } from "./query-view";
 
 export function ModelView({ modelKey }: { modelKey: string }) {
-  const $state = useSnapshot(cosmos);
-  const queries = $state.spaces[modelKey];
+  const queries = cosmos.spaces[modelKey];
 
   if (!queries) return null;
 

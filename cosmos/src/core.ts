@@ -14,6 +14,7 @@ export type Space<T> = {
     behavior: Behavior<T>;
     promise: Promise<State<Ready<T>>> | undefined;
     subscribers: Set<number>;
+    listeners: Set<() => void>;
     stop: (() => void) | undefined;
     clearStopTimer: (() => void) | undefined;
     clearForgetTimer: (() => void) | undefined;
@@ -29,11 +30,17 @@ export type Spec<T> = {
   resolve: () => Behavior<T>;
 };
 
+export type SetState<T> = (recipe: (draft: State<T>) => void) => void;
+
 export type Behavior<T> = {
   value: T;
   forget?: Duration | true;
-  onLoad?: (state: State<T>, meta: Meta) => void;
-  onStart?: (state: State<T>, meta: Meta) => (() => void) | void;
+  onLoad?: (state: State<T>, setState: SetState<T>, meta: Meta) => void;
+  onStart?: (
+    state: State<T>,
+    setState: SetState<T>,
+    meta: Meta,
+  ) => (() => void) | void;
   onWrite?: (state: State<T>, meta: Meta) => void;
   onDelete?: (state: State<T>, meta: Meta) => void;
 };

@@ -1,5 +1,11 @@
-import { proxy, subscribe, ref } from "valtio";
-import { type Space, type Meta, type Spec, type State } from "./core";
+import { produce } from "immer";
+import {
+  type Space,
+  type Meta,
+  type Spec,
+  type State,
+  type SetState,
+} from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
 import { toMs } from "./duration";
@@ -17,9 +23,32 @@ export type Cosmos = {
   spaces: Record<string, Record<string, Space<any>>>;
 };
 
-export const cosmos = proxy<Cosmos>({
+export const cosmos: Cosmos = {
   spaces: {},
-});
+};
+
+export function notifyListeners<T>(space: Space<T>) {
+  for (const listener of space.internal.listeners) {
+    listener();
+  }
+}
+
+export function createSetState<T>(space: Space<T>): SetState<T> {
+  return (recipe) => {
+    space.state = produce(space.state, recipe);
+    notifyListeners(space);
+  };
+}
+
+export function subscribeToSpace<T>(
+  space: Space<T>,
+  listener: () => void,
+): () => void {
+  space.internal.listeners.add(listener);
+  return () => {
+    space.internal.listeners.delete(listener);
+  };
+}
 
 export function initSpace<T>(spec: Spec<T>): Space<T> {
   const { spaces } = cosmos;
@@ -32,36 +61,42 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
 
   if (!cosmos.spaces[spec.name][serializedArgs]) {
     const behavior = spec.resolve();
-    const space: Space<T> = proxy({
+    const space: Space<T> = {
       state: {
         value: behavior.value,
         updatedAt: 0,
       },
-      internal: ref({
+      internal: {
         alive: false,
         behavior,
         promise: undefined,
         subscribers: new Set<number>(),
+        listeners: new Set<() => void>(),
         stop: undefined,
         clearStopTimer: undefined,
         clearForgetTimer: undefined,
         onDeleteHandlers: [],
-      }),
-    });
+      },
+    };
 
     const meta: Meta = {
       name: spec.name,
       args: spec.args,
     };
 
-    behavior.onLoad?.(space.state, meta);
+    const setState = createSetState(space);
+
+    behavior.onLoad?.(space.state, setState, meta);
 
     const onWrite = behavior.onWrite;
     if (onWrite) {
-      const unsubscribe = subscribe(space.state, () => {
+      const listener = () => {
         onWrite(space.state, meta);
+      };
+      space.internal.listeners.add(listener);
+      space.internal.onDeleteHandlers.push(() => {
+        space.internal.listeners.delete(listener);
       });
-      space.internal.onDeleteHandlers.push(unsubscribe);
     }
 
     const onDelete = behavior.onDelete;
@@ -96,7 +131,8 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
       name: spec.name,
       args: spec.args,
     };
-    const stop = behavior.onStart?.(space.state, meta);
+    const setState = createSetState(space);
+    const stop = behavior.onStart?.(space.state, setState, meta);
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;
@@ -143,7 +179,7 @@ export function getPromise<T>(spec: Spec<T>) {
         error: (error) => reject(error),
         loading: () => {
           const subscriberId = getNextSubscriberId();
-          const unsubscribe = subscribe(space.state, () => {
+          const unsubscribe = subscribeToSpace(space, () => {
             map({
               value: () => {
                 unsubscribe();
@@ -158,8 +194,6 @@ export function getPromise<T>(spec: Spec<T>) {
               loading: () => {},
             });
           });
-          // Add subscriber after watching the state,
-          // because the model may synchronously emit a value
           addSubscriber(spec, subscriberId);
         },
       });

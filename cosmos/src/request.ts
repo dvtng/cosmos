@@ -15,7 +15,7 @@ export function request<T>(
 ): Behavior<Later<T>> {
   return {
     value: loading<T>(),
-    onStart: (state, setState) => {
+    onStart: ({ get, set }) => {
       let alive = true;
 
       const timer = new Timer();
@@ -24,14 +24,14 @@ export function request<T>(
         try {
           const value = await fn();
           if (alive) {
-            setState((draft) => {
+            set((draft) => {
               draft.value = value;
               draft.updatedAt = Date.now();
             });
           }
         } catch (error) {
           if (alive) {
-            setState((draft) => {
+            set((draft) => {
               if (isLoading(draft.value) || isError(draft.value)) {
                 draft.value = asError(error);
               }
@@ -46,21 +46,21 @@ export function request<T>(
           timer.schedule({
             run,
             duration: options.refresh,
-            since: state.updatedAt,
+            since: get().updatedAt,
           });
         });
       }
 
       const removeFocusListener = options.refreshOnFocus
         ? addWindowListener("focus", () => {
-            timer.schedule({ run, since: state.updatedAt });
+            timer.schedule({ run, since: get().updatedAt });
           })
         : undefined;
 
       timer.schedule({
         run,
         duration: options.refresh,
-        since: state.updatedAt,
+        since: get().updatedAt,
       });
 
       return () => {

@@ -2,9 +2,9 @@ import { Suspense } from "react";
 import { Clock } from "./clock";
 import { CounterOnFocusView } from "./counter-on-focus";
 import { Counters } from "./counters";
-import { CoinPriceView } from "./coin-price";
 import { ErrorBoundary } from "./error-boundary";
 import { CosmosDev } from "@dvtng/cosmos/dist/dev";
+import { CoinPriceView } from "./coin-price";
 
 export function App() {
   return (
@@ -22,7 +22,7 @@ export function App() {
           </div>
           <div className="panel">
             <h2>BTC price</h2>
-            {/* <CoinPriceView coinId="btc-bitcoin" /> */}
+            <CoinPriceView coinId="btc-bitcoin" />
           </div>
         </Suspense>
       </ErrorBoundary>

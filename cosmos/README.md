@@ -1,6 +1,6 @@
 # Cosmos
 
-A reactive state management library for React, built on [valtio](https://github.com/pmndrs/valtio).
+The _universal_ state management for React. Cosmos is a unified framework for data-fetching and UI state.
 
 Cosmos organizes state into **models** — named, parameterized units of state with composable behaviors like async data fetching, computed derivations, lifecycle hooks, and persistence.
 
@@ -20,9 +20,9 @@ import { model } from "@dvtng/cosmos";
 // A simple model with no arguments
 const Time = model("Time", () => ({
   value: new Date(),
-  onStart(_state, setState) {
+  onStart({ set }) {
     const interval = setInterval(() => {
-      setState((draft) => {
+      set((draft) => {
         draft.value = new Date();
       });
     }, 1000);
@@ -36,15 +36,15 @@ const Counter = model(
   () => ({
     value: 0,
     forget: true,
-    onStart(_state, setState) {
+    onStart({ set }) {
       const interval = setInterval(() => {
-        setState((draft) => {
+        set((draft) => {
           draft.value++;
         });
       }, 1000);
       return () => clearInterval(interval);
     },
-  })
+  }),
 );
 ```
 
@@ -58,17 +58,25 @@ A model's resolve function returns a **behavior** — an object describing the m
 type State<T> = { value: T; updatedAt: number };
 type SetState<T> = (recipe: (draft: State<T>) => void) => void;
 
+type Meta = { name: string; args: unknown[] };
+
+type HookContext<T> = {
+  get: () => State<T>; // Latest state (read after updates)
+  set: SetState<T>; // Immer-style update, same as setModel
+  meta: Meta;
+};
+
 type Behavior<T> = {
-  value: T;                // Initial value (required)
-  forget?: Duration | true;  // How long to retain state after all subscribers leave
-  onLoad?: (state, setState, meta) => void;          // Called once when state is first created
-  onStart?: (state, setState, meta) => (() => void) | void;  // Called when first subscriber arrives
-  onWrite?: (state, meta) => void;         // Called on every state change
-  onDelete?: (state, meta) => void;        // Called when state is deleted
+  value: T; // Initial value (required)
+  forget?: Duration | true; // How long to retain state after all subscribers leave
+  onLoad?: (context: HookContext<T>) => void; // Called once when state is first created
+  onStart?: (context: HookContext<T>) => (() => void) | void; // Called when first subscriber arrives
+  onWrite?: (context: HookContext<T>) => void; // Called on every state change
+  onDelete?: (context: HookContext<T>) => void; // Called when state is deleted
 };
 ```
 
-`setState` applies an [Immer](https://immerjs.github.io/immer/) recipe to the model's `State<T>` (`value` and `updatedAt`), then notifies subscribers — the same mechanism as `setModel`.
+`context.set` applies an [Immer](https://immerjs.github.io/immer/) recipe to the model's `State<T>` (`value` and `updatedAt`), then notifies subscribers — the same mechanism as `setModel`.
 
 A **trait** is a behavior without a `value` — it adds lifecycle hooks without defining the initial value. Traits are used by helpers like `persist()`.
 
@@ -101,7 +109,7 @@ coinPrice.map({
 ### Lifecycle
 
 1. **Creation** — When a model is first accessed, `resolve()` runs to produce the behavior. The state is initialized with `behavior.value`. `onLoad` is called.
-2. **Start** — When the first subscriber arrives, `onStart` is called with `setState` for Immer-style updates. It may return a cleanup function.
+2. **Start** — When the first subscriber arrives, `onStart` receives a `HookContext` (`get`, `set`, `meta`). It may return a cleanup function.
 3. **Active** — While there are subscribers, the model is alive. `onWrite` fires on every state mutation.
 4. **Stop** — When the last subscriber leaves, after a 1-second keep-alive delay, the cleanup from `onStart` runs.
 5. **Forget** — If `forget` is set, after the stop cleanup runs, the state is deleted after the specified duration. `onDelete` is called.
@@ -118,12 +126,12 @@ Defines a model. Returns a function that produces a spec when called.
 
 ```ts
 function model<A extends any[], V>(
-  resolve: (...args: A) => Behavior<V> | Traits<V>
+  resolve: (...args: A) => Behavior<V> | Traits<V>,
 ): Model<A, V>;
 
 function model<A extends any[], V>(
   identity: string | { name: string; args: (...args: A) => unknown[] },
-  resolve: (...args: A) => Behavior<V> | Traits<V>
+  resolve: (...args: A) => Behavior<V> | Traits<V>,
 ): Model<A, V>;
 ```
 
@@ -137,7 +145,7 @@ The `args` function controls how model instances are identified. Two calls that 
 ```ts
 const Counter = model(
   { name: "Counter", args: (id: number) => [{ id }] },
-  () => ({ value: 0 })
+  () => ({ value: 0 }),
 );
 Counter(1); // same instance as another Counter(1)
 ```
@@ -189,7 +197,7 @@ const { value } = await getModel(CoinPrice("btc-bitcoin"));
 
 ### `setModel(spec, recipe)`
 
-Sets a model's state from outside React using an Immer recipe (same shape as `setState` in `onStart` / `onLoad`).
+Sets a model's state from outside React using an Immer recipe (same as `context.set` in lifecycle hooks).
 
 ```ts
 function setModel<T>(spec: Spec<T>, recipe: (draft: State<T>) => void): void;
@@ -224,7 +232,7 @@ Creates a behavior whose value is derived from other models. The value automatic
 ```ts
 function compute<T>(
   fn: (get: GetSnapshot) => Later<T>,
-  options?: { defaultValue?: T }
+  options?: { defaultValue?: T },
 ): Behavior<Later<T>>;
 ```
 
@@ -254,16 +262,16 @@ Creates a behavior for async data fetching. The value is `Later<T>` — initiall
 ```ts
 function request<T>(
   fn: () => Promise<T> | T,
-  options?: RequestOptions
+  options?: RequestOptions,
 ): Behavior<Later<T>>;
 ```
 
 **`RequestOptions`:**
 
-| Option | Type | Description |
-|---|---|---|
-| `refresh` | `Duration` | Automatically re-fetch on an interval after the last update. |
-| `refreshOnFocus` | `boolean` | Re-fetch when the window regains focus. |
+| Option           | Type       | Description                                                  |
+| ---------------- | ---------- | ------------------------------------------------------------ |
+| `refresh`        | `Duration` | Automatically re-fetch on an interval after the last update. |
+| `refreshOnFocus` | `boolean`  | Re-fetch when the window regains focus.                      |
 
 ```ts
 const CoinPrice = model("CoinPrice", (coinId: string) => {
@@ -300,11 +308,11 @@ function persist<T>(key: string, options?: PersistOptions<T>): Trait<T>;
 
 **`PersistOptions`:**
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `serialize` | `(state: State<T>) => string` | `JSON.stringify` | Custom serialization. |
-| `parse` | `(serialized: string) => State<T>` | `JSON.parse` | Custom deserialization. |
-| `storage` | `Storage` | `localStorage` | Storage backend (must implement the `Storage` interface). |
+| Option      | Type                               | Default          | Description                                               |
+| ----------- | ---------------------------------- | ---------------- | --------------------------------------------------------- |
+| `serialize` | `(state: State<T>) => string`      | `JSON.stringify` | Custom serialization.                                     |
+| `parse`     | `(serialized: string) => State<T>` | `JSON.parse`     | Custom deserialization.                                   |
+| `storage`   | `Storage`                          | `localStorage`   | Storage backend (must implement the `Storage` interface). |
 
 The storage key format is `cosmos:{key}:{serializedArgs}`.
 
@@ -313,16 +321,6 @@ const AppState = model("AppState", () => [
   value({ count: 0 }),
   persist("AppState"),
 ]);
-```
-
----
-
-### `ref(value)`
-
-Re-exported from valtio. Wraps a value so that valtio does not proxy it. Use this for values that should not be deeply reactive (e.g., DOM elements, class instances).
-
-```ts
-import { ref } from "@dvtng/cosmos";
 ```
 
 ---

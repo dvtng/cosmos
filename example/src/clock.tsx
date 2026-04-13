@@ -4,10 +4,10 @@ export const Time = model("Time", () => {
   return [
     {
       value: new Date(),
-      onStart(_state, setState) {
+      onStart({ set }) {
         const interval = setInterval(() => {
-          setState((draft) => {
-            draft.value = new Date();
+          set((state) => {
+            state.value = new Date();
           });
         }, 1000);
         return () => clearInterval(interval);

@@ -7,10 +7,10 @@ export const Counter = model(
     return {
       value: 0,
       forget: true,
-      onStart: (_state, setState) => {
+      onStart: ({ set }) => {
         const interval = setInterval(() => {
-          setState((draft) => {
-            draft.value++;
+          set((state) => {
+            state.value++;
           });
         }, 1000);
 

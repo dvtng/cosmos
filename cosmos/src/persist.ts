@@ -42,13 +42,13 @@ export function persist<T>(key: string, options?: PersistOptions<T>): Trait<T> {
   }
 
   return {
-    onLoad: (_state, setState, meta) => {
+    onLoad: ({ meta, set }) => {
       const storageKey = getStorageKey(meta);
       const serialized = storage.getItem(storageKey);
       if (serialized) {
         try {
           const parsedState = parse(serialized);
-          setState((draft) => {
+          set((draft) => {
             draft.value = parsedState.value;
             draft.updatedAt = parsedState.updatedAt;
           });
@@ -59,7 +59,9 @@ export function persist<T>(key: string, options?: PersistOptions<T>): Trait<T> {
       }
     },
 
-    onWrite: (state: State<T>, meta: Meta) => {
+    onWrite: ({ get, meta }) => {
+      const state = get();
+
       // Don't persist errors
       if (isError(state.value)) {
         return;
@@ -74,7 +76,7 @@ export function persist<T>(key: string, options?: PersistOptions<T>): Trait<T> {
       }
     },
 
-    onDelete: (_state, meta) => {
+    onDelete: ({ meta }) => {
       const storageKey = getStorageKey(meta);
       try {
         storage.removeItem(storageKey);

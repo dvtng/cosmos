@@ -20,8 +20,8 @@ test("useModel", () => {
   expect(screen.getByText("0")).toBeInTheDocument();
 
   act(() => {
-    setModel(spec, (draft) => {
-      draft.value++;
+    setModel(spec, (state) => {
+      state.value++;
     });
   });
 

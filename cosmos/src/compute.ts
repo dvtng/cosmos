@@ -45,7 +45,7 @@ export function compute<TValue>(
         }
       }
     })(),
-    onStart(_state, setState) {
+    onStart({ set }) {
       const subscriberId = getNextSubscriberId();
       let specs: Record<string, Spec<any>> = {};
       const unsubscribes: Record<string, () => void> = {};
@@ -80,7 +80,7 @@ export function compute<TValue>(
           }
         }
 
-        setState((draft) => {
+        set((draft) => {
           draft.value = newValue as any;
         });
 

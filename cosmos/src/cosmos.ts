@@ -1,5 +1,6 @@
 import { produce } from "immer";
 import {
+  type HookContext,
   type Space,
   type Meta,
   type Spec,
@@ -37,6 +38,17 @@ export function createSetState<T>(space: Space<T>): SetState<T> {
   return (recipe) => {
     space.state = produce(space.state, recipe);
     notifyListeners(space);
+  };
+}
+
+export function createHookContext<T>(
+  space: Space<T>,
+  meta: Meta,
+): HookContext<T> {
+  return {
+    get: () => space.state,
+    set: createSetState(space),
+    meta,
   };
 }
 
@@ -84,14 +96,14 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
       args: spec.args,
     };
 
-    const setState = createSetState(space);
+    const context = createHookContext(space, meta);
 
-    behavior.onLoad?.(space.state, setState, meta);
+    behavior.onLoad?.(context);
 
     const onWrite = behavior.onWrite;
     if (onWrite) {
       const listener = () => {
-        onWrite(space.state, meta);
+        onWrite(context);
       };
       space.internal.listeners.add(listener);
       space.internal.onDeleteHandlers.push(() => {
@@ -101,7 +113,7 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
 
     const onDelete = behavior.onDelete;
     if (onDelete) {
-      space.internal.onDeleteHandlers.push(() => onDelete(space.state, meta));
+      space.internal.onDeleteHandlers.push(() => onDelete(context));
     }
 
     spaces[spec.name][serializedArgs] = space;
@@ -131,8 +143,7 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
       name: spec.name,
       args: spec.args,
     };
-    const setState = createSetState(space);
-    const stop = behavior.onStart?.(space.state, setState, meta);
+    const stop = behavior.onStart?.(createHookContext(space, meta));
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;

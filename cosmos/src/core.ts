@@ -30,19 +30,21 @@ export type Spec<T> = {
   resolve: () => Behavior<T>;
 };
 
-export type SetState<T> = (recipe: (draft: State<T>) => void) => void;
+export type SetState<T> = (recipe: (state: State<T>) => void) => void;
+
+export type HookContext<T> = {
+  get: () => State<T>;
+  set: SetState<T>;
+  meta: Meta;
+};
 
 export type Behavior<T> = {
   value: T;
   forget?: Duration | true;
-  onLoad?: (state: State<T>, setState: SetState<T>, meta: Meta) => void;
-  onStart?: (
-    state: State<T>,
-    setState: SetState<T>,
-    meta: Meta,
-  ) => (() => void) | void;
-  onWrite?: (state: State<T>, meta: Meta) => void;
-  onDelete?: (state: State<T>, meta: Meta) => void;
+  onLoad?: (context: HookContext<T>) => void;
+  onStart?: (context: HookContext<T>) => (() => void) | void;
+  onWrite?: (context: HookContext<T>) => void;
+  onDelete?: (context: HookContext<T>) => void;
 };
 
 export type Trait<T> = Omit<Behavior<T>, "value">;

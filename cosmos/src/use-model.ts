@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useLayoutEffect } from "react";
+import { useSyncExternalStore, useLayoutEffect, useMemo } from "react";
 import { type Snapshot, type Spec } from "./core";
 import {
   removeSubscriber,
@@ -29,22 +29,24 @@ export function useModel<T>(spec: Spec<T>): Snapshot<T> {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.name, serializeArgs(spec.args)]);
 
-  const map = createMapper(() => state.value as T, {
-    value: (value) => {
-      return value;
-    },
-    loading: () => {
-      throw getPromise(spec);
-    },
-    error: (error) => {
-      throw error;
-    },
-  });
+  return useMemo(() => {
+    const map = createMapper(() => state.value as T, {
+      value: (value) => {
+        return value;
+      },
+      loading: () => {
+        throw getPromise(spec);
+      },
+      error: (error) => {
+        throw error;
+      },
+    });
 
-  return {
-    map,
-    get value() {
-      return map({});
-    },
-  };
+    return {
+      map,
+      get value() {
+        return map({});
+      },
+    };
+  }, [state]);
 }

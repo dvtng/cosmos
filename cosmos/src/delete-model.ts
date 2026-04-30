@@ -1,5 +1,5 @@
 import type { Spec, Space } from "./core";
-import { cosmos } from "./cosmos";
+import { cosmos, removeSubscriber } from "./cosmos";
 import { serializeArgs } from "./serialize-args";
 
 function deleteSpace<T>(spec: Spec<T>, space: Space<T>) {
@@ -19,12 +19,12 @@ export function deleteModel<T>(spec: Spec<T>) {
   if (!space) {
     return;
   }
+
   const { internal } = space;
 
-  if (internal.subscribers.size > 0) {
-    throw new Error(
-      `Cannot delete model ${spec.name} while it has active subscribers.`,
-    );
+  // Remove all subscribers
+  for (const subscriberId of internal.subscribers) {
+    removeSubscriber(spec, subscriberId);
   }
 
   if (internal.clearStopTimer) {

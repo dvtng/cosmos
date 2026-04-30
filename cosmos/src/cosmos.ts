@@ -13,7 +13,7 @@ import { type Ready } from "./later";
 import { createMapper } from "./later-map";
 import { setSmartTimeout } from "./set-smart-timeout";
 
-const KEEP_ALIVE_MS = 1000;
+const KEEP_ALIVE_MS = 0;
 
 const NOT_IMPLEMENTED = () => {
   throw new Error("Not implemented");

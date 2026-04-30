@@ -366,7 +366,9 @@ function forget<T>(): Trait<T>;
 
 ### `deleteModel(spec)`
 
-Removes a model's state from the cache. If there is no cached instance for the spec, does nothing. Otherwise clears timers, runs stop cleanup if needed, runs `onDelete`, then deletes the space; throws if the model still has subscribers.
+Removes a model's state from the cache.
+
+If there is no cached instance for the spec, does nothing. Otherwise clears timers, runs stop cleanup if needed, runs `onDelete`, then deletes the space.
 
 ```ts
 function deleteModel<T>(spec: Spec<T>): void;

@@ -1,5 +1,6 @@
 export * from "./later";
 export * from "./core";
+export * from "./combine-behavior";
 export * from "./model";
 export * from "./use-model";
 export * from "./set-model";

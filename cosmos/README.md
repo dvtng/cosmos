@@ -15,7 +15,7 @@ npm install @dvtng/cosmos
 A **model** is a named, reusable definition for a unit of reactive state. Models are defined with `model()` and instantiated by calling the resulting function, which produces a **spec** — a description of a particular model instance identified by its name and arguments.
 
 ```ts
-import { model } from "@dvtng/cosmos";
+import { forget, model } from "@dvtng/cosmos";
 
 // A simple model with no arguments
 const Time = model("Time", () => ({
@@ -33,22 +33,24 @@ const Time = model("Time", () => ({
 // A parameterized model
 const Counter = model(
   { name: "Counter", args: (id: number) => [{ id }] },
-  () => ({
-    value: 0,
-    forget: true,
-    onStart({ set }) {
-      const interval = setInterval(() => {
-        set((draft) => {
-          draft.value++;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
+  () => [
+    {
+      value: 0,
+      onStart({ set }) {
+        const interval = setInterval(() => {
+          set((draft) => {
+            draft.value++;
+          });
+        }, 1000);
+        return () => clearInterval(interval);
+      },
     },
-  }),
+    forget(),
+  ],
 );
 ```
 
-Models are **lazy** — their state is only created when first accessed (via `useModel`, `getModel`, or `compute`). When all subscribers are removed, the model's `onStart` cleanup runs after a short keep-alive period, and if `forget` is set, the state is eventually deleted entirely.
+Models are **lazy** — their state is only created when first accessed (via `useModel`, `getModel`, or `compute`). When all subscribers are removed, the model's `onStart` cleanup runs after a short keep-alive period. If you include the `forget()` trait (or call `deleteModel` from your own stop logic), the space is removed from the cache after stop so the next access creates fresh state.
 
 ### Behaviors and Traits
 
@@ -68,7 +70,6 @@ type HookContext<T> = {
 
 type Behavior<T> = {
   value: T; // Initial value (required)
-  forget?: Duration | true; // How long to retain state after all subscribers leave
   onLoad?: (context: HookContext<T>) => void; // Called once when state is first created
   onStart?: (context: HookContext<T>) => (() => void) | void; // Called when first subscriber arrives
   onWrite?: (context: HookContext<T>) => void; // Called on every state change
@@ -78,9 +79,9 @@ type Behavior<T> = {
 
 `context.set` applies an [Immer](https://immerjs.github.io/immer/) recipe to the model's `State<T>` (`value` and `updatedAt`), then notifies subscribers — the same mechanism as `setModel`.
 
-A **trait** is a behavior without a `value` — it adds lifecycle hooks without defining the initial value. Traits are used by helpers like `persist()`.
+A **trait** is a behavior without a `value` — it adds lifecycle hooks without defining the initial value. Traits are used by helpers like `persist()` and `forget()`.
 
-The resolve function can return either a single behavior object, or an **array** containing one behavior and any number of traits. When an array is returned, the behaviors and traits are merged: lifecycle hooks are composed (all run), the `value` is taken from the behavior, and `forget` uses the first defined value.
+The resolve function can return either a single behavior object, or an **array** containing one behavior and any number of traits. When an array is returned, the behaviors and traits are merged: lifecycle hooks are composed (all run), and the `value` is taken from the behavior object in the array.
 
 ```ts
 const AppState = model("AppState", () => {
@@ -112,9 +113,9 @@ coinPrice.map({
 2. **Start** — When the first subscriber arrives, `onStart` receives a `HookContext` (`get`, `set`, `meta`). It may return a cleanup function.
 3. **Active** — While there are subscribers, the model is alive. `onWrite` fires on every state mutation.
 4. **Stop** — When the last subscriber leaves, after a 1-second keep-alive delay, the cleanup from `onStart` runs.
-5. **Forget** — If `forget` is set, after the stop cleanup runs, the state is deleted after the specified duration. `onDelete` is called.
+5. **Delete** — If you use `forget()` or call `deleteModel(spec)` after stop, the space is removed from the cache. `onDelete` runs as part of deletion.
 
-If a new subscriber arrives during the keep-alive or forget window, the timers are cancelled and the model stays alive.
+If a new subscriber arrives during the keep-alive window before stop runs, the timer is cancelled and the model stays alive.
 
 ## API reference
 
@@ -337,7 +338,7 @@ function isReady<T>(snapshot: Snapshot<T>): boolean;
 
 ### `Duration`
 
-An object specifying a time duration, used by `request({ refresh })` and `Behavior.forget`:
+An object specifying a time duration, used by `request({ refresh })`:
 
 ```ts
 type Duration = Partial<{
@@ -351,7 +352,25 @@ type Duration = Partial<{
 
 Multiple fields are additive: `{ minutes: 1, seconds: 30 }` = 90 seconds.
 
-Setting `forget: true` is equivalent to `forget: { ms: 0 }` — state is deleted immediately after the stop timer.
+---
+
+### `forget()`
+
+Returns a trait that deletes the model's state when there are no more subscribers.
+
+```ts
+function forget<T>(): Trait<T>;
+```
+
+---
+
+### `deleteModel(spec)`
+
+Removes a model's state from the cache. If there is no cached instance for the spec, does nothing. Otherwise clears timers, runs stop cleanup if needed, runs `onDelete`, then deletes the space; throws if the model still has subscribers.
+
+```ts
+function deleteModel<T>(spec: Spec<T>): void;
+```
 
 ---
 

@@ -9,7 +9,6 @@ import {
 } from "./core";
 import { serializeArgs } from "./serialize-args";
 import { getNextSubscriberId } from "./get-next-subscriber-id";
-import { toMs } from "./duration";
 import { type Ready } from "./later";
 import { createMapper } from "./later-map";
 import { setSmartTimeout } from "./set-smart-timeout";
@@ -86,7 +85,6 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
         listeners: new Set<() => void>(),
         stop: undefined,
         clearStopTimer: undefined,
-        clearForgetTimer: undefined,
         onDeleteHandlers: [],
       },
     };
@@ -131,10 +129,6 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
     internal.clearStopTimer();
     internal.clearStopTimer = undefined;
   }
-  if (internal.clearForgetTimer) {
-    internal.clearForgetTimer();
-    internal.clearForgetTimer = undefined;
-  }
 
   if (!internal.alive) {
     internal.alive = true;
@@ -148,16 +142,6 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
       internal.stop = undefined;
       internal.alive = false;
       stop?.();
-
-      const forgetMs = toMs(behavior.forget, null);
-      if (forgetMs != null) {
-        internal.clearForgetTimer = setSmartTimeout(() => {
-          const serializedArgs = serializeArgs(spec.args);
-          if (cosmos.spaces[spec.name]?.[serializedArgs] === space) {
-            delete cosmos.spaces[spec.name][serializedArgs];
-          }
-        }, forgetMs);
-      }
     };
   }
 }

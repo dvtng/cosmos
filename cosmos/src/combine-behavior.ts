@@ -14,11 +14,9 @@ export function combineBehavior<T>(
   }
 
   const value = (behavior.find((b) => "value" in b) as Behavior<T>).value;
-  const forget = behavior.find((b) => b.forget !== undefined)?.forget;
 
   return {
     value,
-    forget,
     onLoad: combineFunctions(behavior.flatMap((b) => b.onLoad ?? [])),
     onStart: combineFunctions(behavior.flatMap((b) => b.onStart ?? [])),
     onWrite: combineFunctions(behavior.flatMap((b) => b.onWrite ?? [])),

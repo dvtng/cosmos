@@ -1,4 +1,3 @@
-import type { Duration } from "./duration";
 import type { Ready } from "./later";
 import type { Mapper } from "./later-map";
 
@@ -17,7 +16,6 @@ export type Space<T> = {
     listeners: Set<() => void>;
     stop: (() => void) | undefined;
     clearStopTimer: (() => void) | undefined;
-    clearForgetTimer: (() => void) | undefined;
     onDeleteHandlers: (() => void)[];
   };
 };
@@ -40,7 +38,6 @@ export type HookContext<T> = {
 
 export type Behavior<T> = {
   value: T;
-  forget?: Duration | true;
   onLoad?: (context: HookContext<T>) => void;
   onStart?: (context: HookContext<T>) => (() => void) | void;
   onWrite?: (context: HookContext<T>) => void;

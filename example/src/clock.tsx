@@ -1,18 +1,16 @@
-import { model, useModel } from "@dvtng/cosmos";
+import { model, refresh, useModel } from "@dvtng/cosmos";
 
 export const Time = model("Time", () => {
   return [
-    {
-      value: new Date(),
-      onStart({ set }) {
-        const interval = setInterval(() => {
-          set((state) => {
-            state.value = new Date();
-          });
-        }, 1000);
-        return () => clearInterval(interval);
+    { value: new Date() },
+    refresh({
+      interval: { seconds: 1 },
+      run: (ctx) => {
+        ctx.set((state) => {
+          state.value = new Date();
+        });
       },
-    },
+    }),
   ];
 });
 

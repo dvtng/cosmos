@@ -1,6 +1,6 @@
 import { produce } from "immer";
 import {
-  type HookContext,
+  type ModelContext,
   type Space,
   type Meta,
   type Spec,
@@ -40,14 +40,15 @@ export function createSetState<T>(space: Space<T>): SetState<T> {
   };
 }
 
-export function createHookContext<T>(
+export function createModelContext<T>(
   space: Space<T>,
   meta: Meta,
-): HookContext<T> {
+): ModelContext<T> {
   return {
     get: () => space.state,
     set: createSetState(space),
     meta,
+    isAlive: () => space.internal.alive,
   };
 }
 
@@ -75,7 +76,6 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
     const space: Space<T> = {
       state: {
         value: behavior.value,
-        updatedAt: 0,
       },
       internal: {
         alive: false,
@@ -94,7 +94,7 @@ export function initSpace<T>(spec: Spec<T>): Space<T> {
       args: spec.args,
     };
 
-    const context = createHookContext(space, meta);
+    const context = createModelContext(space, meta);
 
     behavior.onLoad?.(context);
 
@@ -137,7 +137,7 @@ export function addSubscriber<T>(spec: Spec<T>, subscriberId: number) {
       name: spec.name,
       args: spec.args,
     };
-    const stop = behavior.onStart?.(createHookContext(space, meta));
+    const stop = behavior.onStart?.(createModelContext(space, meta));
     internal.stop = () => {
       internal.stop = undefined;
       internal.alive = false;

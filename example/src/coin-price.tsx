@@ -3,7 +3,9 @@ import NumberFlow from "@number-flow/react";
 
 export const CoinPrice = model("CoinPrice", (coinId: string) => {
   return [
-    request(() => fetchCoinPrice(coinId), { refresh: { seconds: 10 } }),
+    request(() => fetchCoinPrice(coinId), {
+      refreshInterval: { seconds: 10 },
+    }),
     persist("CoinPrice"),
   ];
 });

@@ -3,7 +3,7 @@ import type { Mapper } from "./later-map";
 
 export type State<T> = {
   value: T;
-  updatedAt: number;
+  updatedAt?: number;
 };
 
 export type Space<T> = {
@@ -30,18 +30,20 @@ export type Spec<T> = {
 
 export type SetState<T> = (recipe: (state: State<T>) => void) => void;
 
-export type HookContext<T> = {
+export type ModelContext<T> = {
   get: () => State<T>;
   set: SetState<T>;
   meta: Meta;
+  // Whether the model is started (and not stopped)
+  isAlive: () => boolean;
 };
 
 export type Behavior<T> = {
   value: T;
-  onLoad?: (context: HookContext<T>) => void;
-  onStart?: (context: HookContext<T>) => (() => void) | void;
-  onWrite?: (context: HookContext<T>) => void;
-  onDelete?: (context: HookContext<T>) => void;
+  onLoad?: (context: ModelContext<T>) => void;
+  onStart?: (context: ModelContext<T>) => (() => void) | void;
+  onWrite?: (context: ModelContext<T>) => void;
+  onDelete?: (context: ModelContext<T>) => void;
 };
 
 export type Trait<T> = Omit<Behavior<T>, "value">;

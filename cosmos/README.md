@@ -62,18 +62,19 @@ type SetState<T> = (recipe: (draft: State<T>) => void) => void;
 
 type Meta = { name: string; args: unknown[] };
 
-type HookContext<T> = {
+type ModelContext<T> = {
   get: () => State<T>; // Latest state (read after updates)
   set: SetState<T>; // Immer-style update, same as setModel
   meta: Meta;
+  isAlive: () => boolean; // Has active subscriber
 };
 
 type Behavior<T> = {
   value: T; // Initial value (required)
-  onLoad?: (context: HookContext<T>) => void; // Called once when state is first created
-  onStart?: (context: HookContext<T>) => (() => void) | void; // Called when first subscriber arrives
-  onWrite?: (context: HookContext<T>) => void; // Called on every state change
-  onDelete?: (context: HookContext<T>) => void; // Called when state is deleted
+  onLoad?: (context: ModelContext<T>) => void; // Called once when state is first created
+  onStart?: (context: ModelContext<T>) => (() => void) | void; // Called when first subscriber arrives
+  onWrite?: (context: ModelContext<T>) => void; // Called on every state change
+  onDelete?: (context: ModelContext<T>) => void; // Called when state is deleted
 };
 ```
 
@@ -110,7 +111,7 @@ coinPrice.map({
 ### Lifecycle
 
 1. **Creation** — When a model is first accessed, `resolve()` runs to produce the behavior. The state is initialized with `behavior.value`. `onLoad` is called.
-2. **Start** — When the first subscriber arrives, `onStart` receives a `HookContext` (`get`, `set`, `meta`). It may return a cleanup function.
+2. **Start** — When the first subscriber arrives, `onStart` receives a `ModelContext` (`get`, `set`, `meta`, `isAlive`). It may return a cleanup function.
 3. **Active** — While there are subscribers, the model is alive. `onWrite` fires on every state mutation.
 4. **Stop** — When the last subscriber leaves, after a 1-second keep-alive delay, the cleanup from `onStart` runs.
 5. **Delete** — If you use `forget()` or call `deleteModel(spec)` after stop, the space is removed from the cache. `onDelete` runs as part of deletion.
@@ -269,15 +270,17 @@ function request<T>(
 
 **`RequestOptions`:**
 
-| Option           | Type       | Description                                                  |
-| ---------------- | ---------- | ------------------------------------------------------------ |
-| `refresh`        | `Duration` | Automatically re-fetch on an interval after the last update. |
-| `refreshOnFocus` | `boolean`  | Re-fetch when the window regains focus.                      |
+| Option             | Type       | Description                                                  |
+| ------------------ | ---------- | ------------------------------------------------------------ |
+| `refreshInterval`  | `Duration` | Automatically re-fetch on an interval after the last update. |
+| `refreshOnFocus`   | `boolean`  | Re-fetch when the window regains focus.                      |
 
 ```ts
 const CoinPrice = model("CoinPrice", (coinId: string) => {
   return [
-    request(() => fetchCoinPrice(coinId), { refresh: { seconds: 10 } }),
+    request(() => fetchCoinPrice(coinId), {
+      refreshInterval: { seconds: 10 },
+    }),
     persist("CoinPrice"),
   ];
 });
@@ -338,7 +341,7 @@ function isReady<T>(snapshot: Snapshot<T>): boolean;
 
 ### `Duration`
 
-An object specifying a time duration, used by `request({ refresh })`:
+An object specifying a time duration, used by `request({ refreshInterval })` and by the `refresh({ interval })` trait:
 
 ```ts
 type Duration = Partial<{

@@ -11,8 +11,8 @@ export type RefreshOptions<T> = {
 };
 
 /**
- * Trait that owns timer / focus scheduling. If `run` does not change
- * `updatedAt`, it is set to `Date.now()` so interval refresh stays aligned.
+ * Trait that refreshes the model's state at a regular interval, and/or
+ * when the window regains focus.
  */
 export function refresh<T>(options: RefreshOptions<T>): Trait<T> {
   const { run, interval, immediate, onFocus } = options;
